@@ -36,14 +36,11 @@ publishing {
         }
     }
 
+    // TODO: setup sonatype publishing
     repositories {
         maven {
-            name = "Artifactory"
-            url = uri("https://krogertechnology.jfrog.io/artifactory/kroger-dcp")
-            credentials {
-                username = System.getenv()["ARTIFACTORY_USERNAME"]
-                password = System.getenv()["ARTIFACTORY_PASSWORD"]
-            }
+            name = "Sonatype"
+            url = uri("")
         }
     }
 }
