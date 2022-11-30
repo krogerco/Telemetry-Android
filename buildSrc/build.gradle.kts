@@ -2,7 +2,6 @@ plugins {
     `kotlin-dsl`
 }
 
-// TODO: Get from public repos
 buildscript {
     repositories {
         mavenCentral()
