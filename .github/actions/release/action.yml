@@ -17,6 +17,7 @@ outputs:
   buildVersion:
     description: "The calculated version"
     value: ${{ steps.sr.outputs.BUILD_VERSION }}
+
 runs:
   using: composite
   steps:

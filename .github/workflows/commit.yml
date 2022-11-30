@@ -46,6 +46,7 @@ jobs:
           node_version: ${{ env.node_version }}
         env:
           GITHUB_TOKEN: secrets.REPO_ACCESS_TOKEN
+
   build:
     name: Build
     needs: [ commit_lint, code_lint ]
@@ -59,13 +60,11 @@ jobs:
           java_version: ${{ env.java_version }}
         env:
           BUILD_VERSION: "${{ needs.determine_version.outputs.buildVersion }}"
-          KT_JFROG_USERID: "${{ secrets.KT_JFROG_USERID }}"
-          KT_JFROG_TOKEN: "${{ secrets.KT_JFROG_TOKEN }}"
 
   unit_tests:
     name: Unit Tests
     needs: [ commit_lint, code_lint ]
-    runs-on: [ self-hosted, linux, kroger ] # on-prem til time permits
+    runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v3.1.0
       - name: Unit Tests
@@ -73,10 +72,6 @@ jobs:
         uses: ./.github/actions/unit-tests
         with:
           java_version: ${{ env.java_version }}
-        env:
-          KT_JFROG_USERID: "${{ secrets.KT_JFROG_USERID }}"
-          KT_JFROG_TOKEN: "${{ secrets.KT_JFROG_TOKEN }}"
-
 
   release:
     name: Release
@@ -96,9 +91,10 @@ jobs:
           node_version: ${{ env.node_version }}
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
   publish:
     name: Publication
-    runs-on: [ self-hosted, linux, kroger ]
+    runs-on: ubuntu-latest
     needs: release
     if: needs.release.outputs.releaseType != ''
     env:
@@ -113,8 +109,4 @@ jobs:
         with:
           java_version: ${{ env.java_version }}
         env:
-          KT_JFROG_USERID: "${{ secrets.KT_JFROG_USERID }}"
-          KT_JFROG_TOKEN: "${{ secrets.KT_JFROG_TOKEN }}"
-          ARTIFACTORY_USERNAME: ${{ secrets.ARTIFACTORY_USERNAME }}
-          ARTIFACTORY_PASSWORD: ${{ secrets.ARTIFACTORY_PASSWORD }}
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
