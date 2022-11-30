@@ -1,0 +1,81 @@
+name: Release
+description: 'Release app'
+runs-on: ubuntu-latest
+
+inputs:
+  node_version:
+    description: 'The version of nodejs to use'
+    required: true
+
+outputs:
+  releaseType:
+    description: "Semantic type, e.g. major, minor, patch"
+    value: ${{ steps.sr.outputs.RELEASE_TYPE }}
+  releaseChannel:
+    description: "Stable or Pre-release"
+    value: ${{ steps.sr.outputs.RELEASE_CHANNEL }}
+  buildVersion:
+    description: "The calculated version"
+    value: ${{ steps.sr.outputs.BUILD_VERSION }}
+runs:
+  using: composite
+  steps:
+    - uses: actions/checkout@v3.1.0
+    - name: Setup Node v14
+      uses: actions/setup-node@v3.5.0
+      with:
+        node-version: ${{ inputs.node_version }}
+    - name: Install Semantic Release
+      shell: bash
+      run: npm install -g semantic-release conventional-changelog-conventionalcommits
+    - name: Configure Semantic Release
+      shell: bash
+      run: |
+        CONFIG_SEMANTIC_RELEASE=$(cat << JSON
+          {
+            "plugins": [
+              ["@semantic-release/commit-analyzer", {
+                "preset": "conventionalcommits"
+              }],
+              ["@semantic-release/release-notes-generator", {
+                "preset": "conventionalcommits"
+              }],
+              "@semantic-release/github"
+            ],
+            "branches": [
+              "main",
+              {
+                "name": "beta",
+                "prerelease": true
+              },
+              {
+                "name": "alpha",
+                "prerelease": true
+              }
+            ]
+          }
+        JSON
+        )
+        echo $CONFIG_SEMANTIC_RELEASE > .releaserc.json
+    - name: Run Semantic Release
+      id: sr
+      shell: bash
+      run: |
+        SEM_RELEASE="$(semantic-release || true)"
+        echo "$SEM_RELEASE"
+        NEXT_VERSION=$(echo "$SEM_RELEASE" | (grep 'next release version is' || true) | sed -n -e 's/.*next release version is //p')
+        if [ -z "$NEXT_VERSION" ]; then PREVIOUS_TAG=$(git describe --tags --abbrev=0); BUILD_VERSION="${PREVIOUS_TAG:1}"; else BUILD_VERSION=$NEXT_VERSION; fi
+        NEXT_RELEASE_TYPE=$(echo "$SEM_RELEASE" | (grep 'commits complete' || true) | sed 's/.*complete. \(.*\) release/\1/')
+        if [[ "$NEXT_RELEASE_TYPE" == "no" ]]; then RELEASE_TYPE=""; else RELEASE_TYPE=$NEXT_RELEASE_TYPE; fi
+        NEXT_RELEASE_CHANNEL=$(echo "$SEM_RELEASE" | (grep 'Published release' || true) | sed 's/.*on \(.*\) channel/\1/')
+        if [[ -z "$NEXT_RELEASE_CHANNEL" ]]; then RELEASE_CHANNEL=""; else RELEASE_CHANNEL=$NEXT_RELEASE_CHANNEL; fi
+        echo "Release Type: $RELEASE_TYPE"
+        echo "Release Channel: $RELEASE_CHANNEL"
+        echo "Build Version: $BUILD_VERSION"
+        echo "RELEASE_TYPE=$RELEASE_TYPE" >> $GITHUB_OUTPUT
+        echo "RELEASE_CHANNEL=$RELEASE_CHANNEL" >> $GITHUB_OUTPUT
+        echo "BUILD_VERSION=$BUILD_VERSION" >> $GITHUB_OUTPUT
+        echo "# Released Version" >> $GITHUB_STEP_SUMMARY
+        echo "- Type: $RELEASE_TYPE" >> $GITHUB_STEP_SUMMARY
+        echo "- Channel: $RELEASE_CHANNEL" >> $GITHUB_STEP_SUMMARY
+        echo "- Version: $BUILD_VERSION" >> $GITHUB_STEP_SUMMARY

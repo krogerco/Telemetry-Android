@@ -1,0 +1,27 @@
+{
+  "LABEL": {
+    "name": "Bad Title",
+    "color": "B60205"
+  },
+  "CHECKS": {
+    "prefixes": [
+      "docs:",
+      "chore:",
+      "build:",
+      "perf:",
+      "refactor:",
+      "revert:",
+      "style:",
+      "ci:",
+      "fix:",
+      "feat:",
+      "feat!:",
+      "release:"
+    ]
+  },
+  "MESSAGES": {
+    "success": "PR Title meets conventional commit standards",
+    "failure": "PR Title does not meet conventional commit standards",
+    "notice": ""
+  }
+}

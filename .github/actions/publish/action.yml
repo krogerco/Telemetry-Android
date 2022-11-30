@@ -1,0 +1,20 @@
+name: Publish
+description: 'Publish the artifactory '
+
+inputs:
+  java_version:
+    description: 'The version of java to use'
+    required: true
+
+runs:
+  using: composite
+  steps:
+    - name: Checkout
+      uses: actions/checkout@v3.1.0
+    - uses: actions/setup-java@v3.5.1
+      with:
+        distribution: 'zulu'
+        java-version: ${{ inputs.java_version }}
+    - uses: gradle/gradle-build-action@v2
+      with:
+        arguments: publish

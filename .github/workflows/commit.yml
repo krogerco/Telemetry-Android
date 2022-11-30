@@ -1,0 +1,120 @@
+name: Commit
+
+on: push
+
+env:
+  ktlint_version: '0.46.1'
+  node_version: 14
+  java_version: 11
+
+jobs:
+  commit_lint:
+    name: Commit Lint
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3.1.0
+      - name: Run Commit Lint
+        id: commitlint
+        uses: ./.github/actions/commit-lint
+        with:
+          node_version: ${{ env.node_version }}
+
+  code_lint:
+    name: Code Lint
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3.1.0
+      - name: Run ktlint
+        id: ktlint
+        uses: ./.github/actions/code-lint
+        with:
+          ktlint_version: ${{ env.ktlint_version }}
+
+  determine_version:
+    name: Version Determination
+    runs-on: ubuntu-latest
+    outputs:
+      releaseType: ${{ steps.determine_version.outputs.releaseType }}
+      releaseChannel: ${{ steps.determine_version.outputs.releaseChannel }}
+      buildVersion: ${{ steps.determine_version.outputs.buildVersion }}
+    steps:
+      - uses: actions/checkout@v3.1.0
+      - name: Determine Version
+        id: determine_version
+        uses: ./.github/actions/determine-version
+        with:
+          node_version: ${{ env.node_version }}
+        env:
+          GITHUB_TOKEN: secrets.REPO_ACCESS_TOKEN
+  build:
+    name: Build
+    needs: [ commit_lint, code_lint ]
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3.1.0
+      - name: Build
+        id: build
+        uses: ./.github/actions/build
+        with:
+          java_version: ${{ env.java_version }}
+        env:
+          BUILD_VERSION: "${{ needs.determine_version.outputs.buildVersion }}"
+          KT_JFROG_USERID: "${{ secrets.KT_JFROG_USERID }}"
+          KT_JFROG_TOKEN: "${{ secrets.KT_JFROG_TOKEN }}"
+
+  unit_tests:
+    name: Unit Tests
+    needs: [ commit_lint, code_lint ]
+    runs-on: [ self-hosted, linux, kroger ] # on-prem til time permits
+    steps:
+      - uses: actions/checkout@v3.1.0
+      - name: Unit Tests
+        id: unit_tests
+        uses: ./.github/actions/unit-tests
+        with:
+          java_version: ${{ env.java_version }}
+        env:
+          KT_JFROG_USERID: "${{ secrets.KT_JFROG_USERID }}"
+          KT_JFROG_TOKEN: "${{ secrets.KT_JFROG_TOKEN }}"
+
+
+  release:
+    name: Release
+    runs-on: ubuntu-latest
+    needs: [ determine_version, build, unit_tests ]
+    if: needs.determine_version.outputs.releaseType != ''
+    outputs:
+      releaseType: ${{ steps.release.outputs.releaseType }}
+      releaseChannel: ${{ steps.release.outputs.releaseChannel }}
+      buildVersion: ${{ steps.release.outputs.buildVersion }}
+    steps:
+      - uses: actions/checkout@v3.1.0
+      - name: Release
+        id: release
+        uses: ./.github/actions/release
+        with:
+          node_version: ${{ env.node_version }}
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+  publish:
+    name: Publication
+    runs-on: [ self-hosted, linux, kroger ]
+    needs: release
+    if: needs.release.outputs.releaseType != ''
+    env:
+      RELEASE_TYPE: ${{ needs.release.outputs.releaseType }}
+      RELEASE_CHANNEL: ${{ needs.release.outputs.releaseChannel }}
+      BUILD_VERSION: ${{ needs.release.outputs.buildVersion }}
+    steps:
+      - uses: actions/checkout@v3.1.0
+      - name: Publish
+        id: publish
+        uses: ./.github/actions/publish
+        with:
+          java_version: ${{ env.java_version }}
+        env:
+          KT_JFROG_USERID: "${{ secrets.KT_JFROG_USERID }}"
+          KT_JFROG_TOKEN: "${{ secrets.KT_JFROG_TOKEN }}"
+          ARTIFACTORY_USERNAME: ${{ secrets.ARTIFACTORY_USERNAME }}
+          ARTIFACTORY_PASSWORD: ${{ secrets.ARTIFACTORY_PASSWORD }}
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
