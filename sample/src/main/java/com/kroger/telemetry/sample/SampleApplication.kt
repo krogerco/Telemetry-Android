@@ -22,7 +22,7 @@
  * SOFTWARE.
  */
 
-package com.kroger.sample_app
+package com.kroger.telemetry.sample
 
 import android.app.Application
 import android.content.Context

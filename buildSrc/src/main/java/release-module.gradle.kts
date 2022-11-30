@@ -2,7 +2,7 @@ plugins {
     id("maven-publish")
 }
 
-val libraryGroup = "native-platform"
+val libraryGroup = "com.kroger"
 val libraryName = "telemetry"
 val libraryVersion = System.getenv("BUILD_VERSION") ?: "0.0.1"
 

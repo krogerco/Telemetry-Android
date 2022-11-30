@@ -5,38 +5,16 @@ plugins {
 // TODO: Get from public repos
 buildscript {
     repositories {
-        maven {
-            url = uri("https://krogertechnology.jfrog.io/artifactory/libs-release")
-            credentials {
-                username = System.getenv("KT_JFROG_USERID")
-                password = System.getenv("KT_JFROG_TOKEN")
-            }
-            maven {
-                url = uri("https://krogertechnology.jfrog.io/artifactory/remote-repos")
-                credentials {
-                    username = System.getenv("KT_JFROG_USERID")
-                    password = System.getenv("KT_JFROG_TOKEN")
-                }
-            }
-        }
+        mavenCentral()
+        google()
     }
+
 }
+
 allprojects {
     repositories {
-        maven {
-            url = uri("https://krogertechnology.jfrog.io/artifactory/libs-release")
-            credentials {
-                username = System.getenv("KT_JFROG_USERID")
-                password = System.getenv("KT_JFROG_TOKEN")
-            }
-            maven {
-                url = uri("https://krogertechnology.jfrog.io/artifactory/remote-repos")
-                credentials {
-                    username = System.getenv("KT_JFROG_USERID")
-                    password = System.getenv("KT_JFROG_TOKEN")
-                }
-            }
-        }
+        mavenCentral()
+        google()
     }
 }
 

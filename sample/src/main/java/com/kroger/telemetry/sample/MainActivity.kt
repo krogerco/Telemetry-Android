@@ -22,12 +22,13 @@
  * SOFTWARE.
  */
 
-package com.kroger.sample_app
+package com.kroger.telemetry.sample
 
 import android.os.Bundle
 import android.util.Log
 import androidx.appcompat.app.AppCompatActivity
-import com.kroger.sample_app.databinding.ActivityMainBinding
+import com.kroger.sample.R
+import com.kroger.sample.databinding.ActivityMainBinding
 import com.kroger.telemetry.Event
 import com.kroger.telemetry.Relay
 import com.kroger.telemetry.Telemeter

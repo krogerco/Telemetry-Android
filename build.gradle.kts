@@ -3,20 +3,8 @@ import com.github.benmanes.gradle.versions.updates.DependencyUpdatesTask
 // Top-level build file where you can add configuration options common to all sub-projects/modules.
 buildscript {
     repositories {
-        maven {
-            url = uri("https://krogertechnology.jfrog.io/artifactory/libs-release")
-            credentials {
-                username = System.getenv("KT_JFROG_USERID")
-                password = System.getenv("KT_JFROG_TOKEN")
-            }
-        }
-        maven {
-            url = uri("https://krogertechnology.jfrog.io/artifactory/remote-repos")
-            credentials {
-                username = System.getenv("KT_JFROG_USERID")
-                password = System.getenv("KT_JFROG_TOKEN")
-            }
-        }
+        mavenCentral()
+        google()
     }
 }
 
@@ -25,24 +13,8 @@ allprojects {
     version = "0.0.1"
 
     repositories {
-        maven {
-            url = uri("https://krogertechnology.jfrog.io/artifactory/libs-release")
-            credentials {
-                username = System.getenv("KT_JFROG_USERID")
-                password = System.getenv("KT_JFROG_TOKEN")
-            }
-            metadataSources {
-                mavenPom()
-                artifact()
-            }
-        }
-        maven {
-            url = uri("https://krogertechnology.jfrog.io/artifactory/remote-repos")
-            credentials {
-                username = System.getenv("KT_JFROG_USERID")
-                password = System.getenv("KT_JFROG_TOKEN")
-            }
-        }
+        mavenCentral()
+        google()
     }
 }
 
@@ -55,7 +27,7 @@ subprojects {
     apply(plugin = "org.jlleitschuh.gradle.ktlint")
 
     configure<org.jlleitschuh.gradle.ktlint.KtlintExtension> {
-        version.set("0.45.2")
+        version.set("0.46.1")
         android.set(true)
         reporters {
             reporter(org.jlleitschuh.gradle.ktlint.reporter.ReporterType.CHECKSTYLE)

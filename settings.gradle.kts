@@ -2,26 +2,15 @@ include(":telemetry")
 include(":android")
 include(":context-aware")
 include(":firebase")
-include(":sample_app")
+include(":sample")
 enableFeaturePreview("VERSION_CATALOGS")
 
 rootProject.name = "telemetry"
 pluginManagement {
     repositories {
-        maven {
-            url = uri("https://krogertechnology.jfrog.io/artifactory/libs-release")
-            credentials {
-                username = System.getenv("KT_JFROG_USERID")
-                password = System.getenv("KT_JFROG_TOKEN")
-            }
-            maven {
-                url = uri("https://krogertechnology.jfrog.io/artifactory/remote-repos")
-                credentials {
-                    username = System.getenv("KT_JFROG_USERID")
-                    password = System.getenv("KT_JFROG_TOKEN")
-                }
-            }
-        }
+        mavenCentral()
+        google()
+
         // Public portal required for ben-manes:version
         gradlePluginPortal()
     }

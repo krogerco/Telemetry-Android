@@ -22,16 +22,23 @@
  * SOFTWARE.
  */
 
-package com.kroger.sample_app
+package com.kroger.telemetry.sample
 
-import android.util.Log
-import com.kroger.telemetry.Event
-import com.kroger.telemetry.Relay
+import android.content.Context
+import com.kroger.telemetry.Telemeter
+import com.kroger.telemetry.android.relay.LogRelay
+import com.kroger.telemetry.android.relay.ToastRelay
+import com.kroger.telemetry.contextaware.ContextAwareFacetResolver
+import com.kroger.telemetry.facet.Prefix
+import javax.inject.Inject
 
-class FooRelay : Relay {
-    override suspend fun process(event: Event) {
-        val string =
-            "completed ${event.description} ${event.facets}"
-        Log.d("Telemetry - Foo", string)
-    }
-}
+class AppTelemeter @Inject constructor(
+    private val context: Context,
+    private val contextAwareFacetResolver: ContextAwareFacetResolver,
+) : Telemeter by Telemeter.build(
+    relays = listOf(LogRelay(), BarRelay(), FooRelay(), ToastRelay(context)),
+    facetResolvers = mapOf(
+        contextAwareFacetResolver.getType() to contextAwareFacetResolver,
+    ),
+    facets = listOf(Prefix.App("sample")),
+)
