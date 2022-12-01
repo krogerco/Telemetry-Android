@@ -3,9 +3,10 @@ name: Commit
 on: push
 
 env:
+  api_version: 29
   ktlint_version: '0.46.1'
-  node_version: 14
   java_version: 11
+  node_version: 14
 
 jobs:
   commit_lint:
@@ -87,8 +88,8 @@ jobs:
         id: instrumentation_tests
         uses: ./.github/actions/instrumentation-test
         with:
-          java_version: ${{ inputs.java_version }}
-          api_level: ${{ inputs.api_level }}
+          java_version: ${{ env.java_version }}
+          api_level: ${{ env.api_level }}
 
   release:
     name: Release
