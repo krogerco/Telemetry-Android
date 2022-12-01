@@ -34,7 +34,7 @@ runs:
         arch: x86_64
         disable-animations: true
         emulator-options: -no-snapshot -no-window -no-boot-anim -camera-back none -camera-front none -gpu swiftshader_indirect
-        script: ./scripts/run-android-tests.sh
+        script: ./gradlew --build-cache --no-daemon connectedCheck -x :benchmark:connectedBenchmarkAndroidTest
     - name: Merge Reports
       if: ${{ success() || steps.instrumentation_tests.outcome == 'failure' }}
       shell: bash
