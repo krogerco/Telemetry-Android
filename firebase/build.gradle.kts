@@ -9,6 +9,10 @@ android {
             consumerProguardFile("proguard-rules.pro")
         }
     }
+
+    defaultConfig {
+        testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
+    }
 }
 
 dependencies {
@@ -25,4 +29,10 @@ dependencies {
     testImplementation(libs.coroutinesTest)
     testImplementation(libs.jupiterApi)
     testRuntimeOnly(libs.jupiterEngine)
+
+    androidTestImplementation(libs.androidxTestCore)
+    androidTestImplementation(libs.androidxTestRules)
+    androidTestImplementation(libs.androidxTestRunner)
+    androidTestImplementation(libs.junit)
+    androidTestImplementation(libs.junitTestKtx)
 }

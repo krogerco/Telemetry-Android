@@ -45,4 +45,4 @@ public class FirebaseAnalyticsRelay @Inject constructor(
     },
 )
 
-private fun Map<String, Any?>.toBundle(): Bundle = bundleOf(*this.toList().toTypedArray())
+internal fun Map<String, Any?>.toBundle(): Bundle = bundleOf(*this.toList().toTypedArray())
