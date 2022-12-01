@@ -85,7 +85,7 @@ jobs:
           KT_JFROG_USERID: "${{ secrets.KT_JFROG_USERID }}"
           KT_JFROG_TOKEN: "${{ secrets.KT_JFROG_TOKEN }}"
         id: instrumentation_tests
-        uses: krogertechnology/kap-np-android-workflows/.github/actions/instrumentation-test@main
+        uses: ./.github/actions/instrumentation-test
         with:
           java_version: ${{ inputs.java_version }}
           api_level: ${{ inputs.api_level }}
