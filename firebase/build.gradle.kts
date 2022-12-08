@@ -24,7 +24,6 @@ dependencies {
     implementation(libs.injectJavax)
     implementation(libs.stdLib)
 
-
     testImplementation(libs.mockk)
     testImplementation(libs.coroutinesTest)
     testImplementation(libs.jupiterApi)

@@ -12,6 +12,7 @@ kapt {
 android {
     compileSdk = (SdkVersions.compileSdkVersion)
     buildToolsVersion = ("30.0.3")
+    namespace = "com.kroger.telemetry.sample"
 
     defaultConfig {
         minSdk = (SdkVersions.minSdkVersion)

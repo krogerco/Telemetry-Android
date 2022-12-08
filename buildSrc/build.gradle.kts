@@ -7,7 +7,6 @@ buildscript {
         mavenCentral()
         google()
     }
-
 }
 
 allprojects {
