@@ -1,0 +1,15 @@
+*.iml
+.gradle
+/local.properties
+.idea/**
+projectFilesBackup/
+.DS_Store
+/build
+build/
+/captures
+.externalNativeBuild
+.cxx
+local.properties
+buildSrc/build/**
+node_modules
+ktlint

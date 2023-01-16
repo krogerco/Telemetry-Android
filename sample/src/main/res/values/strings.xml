@@ -1,0 +1,4 @@
+<resources>
+    <string name="app_name">Telemetry</string>
+    <string name="button_click_message">A BUTTON WAS CLICKED WHOOOAAAA. IT WAS %s</string>
+</resources>
