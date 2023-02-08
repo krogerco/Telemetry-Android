@@ -1,24 +1,24 @@
 name: Commit Lint
-description: 'Uses node to verify code is formatted'
+description: 'Uses commitlint npm packages to verify commits are formatted as expected'
 
 inputs:
   node_version:
     description: 'The version of nodejs to use'
     required: true
+  commitlint_version:
+    description: 'The version of commitlint to use'
+    required: true
 
 runs:
   using: composite
   steps:
-    - uses: actions/checkout@v3
-      with:
-        fetch-depth: 0
     - name: Setup Node
-      uses: actions/setup-node@v3.5.0
+      uses: actions/setup-node@v3.6.0
       with:
         node-version: ${{ inputs.node_version }}
     - name: Install node commitlint
       shell: bash
-      run: npm install -g @commitlint/config-conventional @commitlint/cli
+      run: npm install -g @commitlint/config-conventional@${{ inputs.commitlint_version }} @commitlint/cli@${{ inputs.commitlint_version }}
     - name: Configure node commitlint
       shell: bash
       run: |

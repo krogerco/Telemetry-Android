@@ -13,22 +13,16 @@ runs:
   using: composite
   steps:
     - name: Set Up JDK
-      uses: actions/setup-java@v3.5.1
+      uses: actions/setup-java@v3.9.0
       with:
         distribution: 'zulu'
         java-version: ${{ inputs.java_version }}
     - name: Copy CI gradle.properties
       shell: bash
       run: mkdir -p ~/.gradle ; cp .github/ci-gradle.properties ~/.gradle/gradle.properties
-    - name: Gradle Caches
-      uses: actions/cache@v3.0.10
-      with:
-        path: |
-          ~/.gradle/caches
-        key: gradle-${{ hashFiles('gradle/wrapper/gradle-wrapper.properties') }}-${{ hashFiles('buildSrc/**') }}-${{ github.sha }}
     - name: Run Instrumentation Tests
       id: instrumentation_tests
-      uses: reactivecircus/android-emulator-runner@v2.26.0
+      uses: reactivecircus/android-emulator-runner@v2.27.0
       with:
         api-level: ${{ inputs.api_level }}
         arch: x86_64
@@ -43,14 +37,14 @@ runs:
         ./node_modules/.bin/jrm ./instrumentation_test_report.xml "**/build/outputs/androidTest-results/connected/flavors/*/*.xml"
     - name: Upload Report Artifact
       if: ${{ success() || steps.instrumentation_tests.outcome == 'failure' }}
-      uses: actions/upload-artifact@v3.1.0
+      uses: actions/upload-artifact@v3
       with:
         name: instrumentation_test-report
         path: instrumentation_test_report.xml
         retention-days: ${{ env.PR_ARTIFACT_RETENTION_DAYS }}
     - name: Publish Report
       if: always()
-      uses: mikepenz/action-junit-report@v3.5.1
+      uses: mikepenz/action-junit-report@v3
       with:
         check_name: "Instrumentation Test Report"
         report_paths: "**/build/outputs/androidTest-results/connected/flavors/*/*.xml"
