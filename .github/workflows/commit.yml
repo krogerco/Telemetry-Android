@@ -95,7 +95,6 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v3.3.0
       - name: Run Tests
-        env:
         id: instrumentation_tests
         uses: ./.github/actions/instrumentation-test@v1.2.0
         with:
