@@ -16,9 +16,10 @@ pluginManagement {
     }
     plugins {
         id("de.mannodermaus.android-junit5").version("1.8.0.0")
-        id("org.jetbrains.dokka").version("1.6.0")
+        id("org.jetbrains.dokka").version("1.5.31")
         id("com.android.application").version("7.3.0")
         id("org.jetbrains.kotlin.plugin.serialization").version("1.5.31")
+        id("com.vanniktech.maven.publish").version("0.24.0")
     }
 
     resolutionStrategy {
