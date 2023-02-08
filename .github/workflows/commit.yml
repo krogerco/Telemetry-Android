@@ -22,7 +22,7 @@ jobs:
           fetch-depth: 0
       - name: Run Commit Lint
         id: commitlint
-        uses: ./.github/actions/commit-lint@v1.2.0
+        uses: ./.github/actions/commit-lint
         with:
           node_version: ${{ env.node_version }}
           commitlint_version: ${{ env.commitlint_version }}
@@ -35,7 +35,7 @@ jobs:
         uses: actions/checkout@v3.3.0
       - name: Run ktlint
         id: ktlint
-        uses: ./.github/actions/code-lint@v1.2.0
+        uses: ./.github/actions/code-lint
         with:
           ktlint_version: ${{ env.ktlint_version }}
 
@@ -51,7 +51,7 @@ jobs:
         uses: actions/checkout@v3.3.0
       - name: Determine Version
         id: determine_version
-        uses: ./.github/actions/determine-version@v1.2.0
+        uses: ./.github/actions/determine-version
         with:
           node_version: ${{ env.node_version }}
           semantic_release_version: ${{ env.semantic_release_version }}
@@ -68,7 +68,7 @@ jobs:
         uses: actions/checkout@v3.3.0
       - name: Build
         id: build
-        uses: ./.github/actions/build@v1.2.0
+        uses: ./.github/actions/build
         with:
           java_version: ${{ env.java_version }}
         env:
@@ -83,7 +83,7 @@ jobs:
         uses: actions/checkout@v3.3.0
       - name: Unit Tests
         id: unit_tests
-        uses: ./.github/actions/unit-tests@v1.2.0
+        uses: ./.github/actions/unit-tests
         with:
           java_version: ${{ env.java_version }}
 
@@ -96,7 +96,7 @@ jobs:
         uses: actions/checkout@v3.3.0
       - name: Run Tests
         id: instrumentation_tests
-        uses: ./.github/actions/instrumentation-test@v1.2.0
+        uses: ./.github/actions/instrumentation-test
         with:
           java_version: ${{ env.java_version }}
           api_level: ${{ env.api_level }}
@@ -115,7 +115,7 @@ jobs:
         uses: actions/checkout@v3.3.0
       - name: Release
         id: release
-        uses: ./.github/actions/release@v1.2.0
+        uses: ./.github/actions/release
         with:
           node_version: ${{ env.node_version }}
           semantic_release_version: ${{ env.semantic_release_version }}
@@ -137,7 +137,7 @@ jobs:
         uses: actions/checkout@v3.3.0
       - name: Publish
         id: publish
-        uses: ./.github/actions/publish@v1.2.0
+        uses: ./.github/actions/publish
         with:
           java_version: ${{ env.java_version }}
         env:
