@@ -57,7 +57,7 @@ jobs:
           semantic_release_version: ${{ env.semantic_release_version }}
           conventional_changelog_version: ${{ env.conventional_changelog_version }}
         env:
-          GITHUB_TOKEN: ${{ secrets.REPO_ACCESS_TOKEN }}
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
   build:
     name: Build
@@ -106,6 +106,8 @@ jobs:
     runs-on: ubuntu-latest
     needs: [ determine_version, build, unit_tests, instrumentation_tests ]
     if: needs.determine_version.outputs.releaseType != ''
+    env:
+      GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
     outputs:
       releaseType: ${{ steps.release.outputs.releaseType }}
       releaseChannel: ${{ steps.release.outputs.releaseChannel }}
@@ -120,8 +122,6 @@ jobs:
           node_version: ${{ env.node_version }}
           semantic_release_version: ${{ env.semantic_release_version }}
           conventional_changelog_version: ${{ env.conventional_changelog_version }}
-        env:
-          GITHUB_TOKEN: ${{ secrets.REPO_ACCESS_TOKEN }}
 
   publish:
     name: Publication
@@ -132,6 +132,12 @@ jobs:
       RELEASE_TYPE: ${{ needs.release.outputs.releaseType }}
       RELEASE_CHANNEL: ${{ needs.release.outputs.releaseChannel }}
       BUILD_VERSION: ${{ needs.release.outputs.buildVersion }}
+      GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      ORG_GRADLE_PROJECT_mavenCentralUsername: ${{ secrets.ORG_GRADLE_PROJECT_mavenCentralUsername }}
+      ORG_GRADLE_PROJECT_mavenCentralPassword: ${{ secrets.ORG_GRADLE_PROJECT_mavenCentralPassword }}
+      ORG_GRADLE_PROJECT_signingInMemoryKey: ${{ secrets.ORG_GRADLE_PROJECT_signingInMemoryKey }}
+      ORG_GRADLE_PROJECT_signingInMemoryKeyId: ${{ secrets.ORG_GRADLE_PROJECT_signingInMemoryKeyId }}
+      ORG_GRADLE_PROJECT_signingInMemoryKeyPassword: ${{ secrets.ORG_GRADLE_PROJECT_signingInMemoryKeyPassword }}
     steps:
       - name: Checkout
         uses: actions/checkout@v3.3.0
@@ -140,10 +146,3 @@ jobs:
         uses: ./.github/actions/publish
         with:
           java_version: ${{ env.java_version }}
-        env:
-          GITHUB_TOKEN: ${{ secrets.REPO_ACCESS_TOKEN }}
-          ORG_GRADLE_PROJECT_mavenCentralUsername: ${{ secrets.ORG_GRADLE_PROJECT_mavenCentralUsername }}
-          ORG_GRADLE_PROJECT_mavenCentralPassword: ${{ secrets.ORG_GRADLE_PROJECT_mavenCentralPassword }}
-          ORG_GRADLE_PROJECT_signingInMemoryKey: ${{ secrets.ORG_GRADLE_PROJECT_signingInMemoryKey }}
-          ORG_GRADLE_PROJECT_signingInMemoryKeyId: ${{ secrets.ORG_GRADLE_PROJECT_signingInMemoryKeyId }}
-          ORG_GRADLE_PROJECT_signingInMemoryKeyPassword: ${{ secrets.ORG_GRADLE_PROJECT_signingInMemoryKeyPassword }}
