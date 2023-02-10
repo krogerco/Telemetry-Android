@@ -15,18 +15,17 @@ pluginManagement {
         gradlePluginPortal()
     }
     plugins {
-        id("de.mannodermaus.android-junit5").version("1.8.0.0")
-        id("org.jetbrains.dokka").version("1.5.31")
+        id("de.mannodermaus.android-junit5").version("1.8.1.0")
+        id("org.jetbrains.dokka").version("1.7.20")
         id("com.android.application").version("7.3.0")
-        id("org.jetbrains.kotlin.plugin.serialization").version("1.5.31")
-        id("com.vanniktech.maven.publish").version("0.24.0")
+        id("org.jetbrains.kotlin.plugin.serialization").version("1.8.10")
     }
 
     resolutionStrategy {
         eachPlugin {
             when (requested.id.id) {
-                "dagger.hilt.android.plugin" -> useModule("com.google.dagger:hilt-android-gradle-plugin:2.40.5")
-                "org.jetbrains.kotlin:kotlin-gradle-plugin:1.5.31" -> useModule("org.jetbrains.kotlin:kotlin-gradle-plugin:1.5.31")
+                "dagger.hilt.android.plugin" -> useModule("com.google.dagger:hilt-android-gradle-plugin:2.44.2")
+                "org.jetbrains.kotlin:kotlin-gradle-plugin:1.8.10" -> useModule("org.jetbrains.kotlin:kotlin-gradle-plugin:1.8.10")
             }
         }
         dependencyResolutionManagement {

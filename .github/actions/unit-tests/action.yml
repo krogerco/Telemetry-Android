@@ -17,4 +17,4 @@ runs:
     - name: Gradle Test
       uses: gradle/gradle-build-action@v2
       with:
-        arguments: test jacocoTestReport --stacktrace
+        arguments: test --stacktrace

@@ -26,7 +26,7 @@
  * Project-specific Version numbers
  */
 object SdkVersions {
-    const val targetSdkVersion = 32
-    const val compileSdkVersion = 32
+    const val targetSdkVersion = 33
+    const val compileSdkVersion = 33
     const val minSdkVersion = 24
 }

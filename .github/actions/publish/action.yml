@@ -19,4 +19,4 @@ runs:
     - name: Publish
       uses: gradle/gradle-build-action@v2
       with:
-        arguments: publish --no-daemon --no-parallel
+        arguments: publishAllPublicationsToMavenCentral --no-daemon --no-parallel

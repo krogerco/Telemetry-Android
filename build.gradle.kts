@@ -9,9 +9,6 @@ buildscript {
 }
 
 allprojects {
-    group = "com.kroger.telemetry"
-    version = "0.0.1"
-
     repositories {
         mavenCentral()
         google()
@@ -19,7 +16,7 @@ allprojects {
 }
 
 plugins {
-    id("com.github.ben-manes.versions") version "0.36.0"
+    id("com.github.ben-manes.versions") version "0.45.0"
     id("org.jlleitschuh.gradle.ktlint") version "11.1.0"
 }
 
@@ -45,4 +42,14 @@ tasks.named("dependencyUpdates", DependencyUpdatesTask::class.java).configure {
     outputFormatter = "json"
     outputDir = "build/dependencyUpdates"
     reportfileName = "report"
+    rejectVersionIf {
+        isNonStable(candidate.version)
+    }
+}
+
+fun isNonStable(version: String): Boolean {
+    val stableKeyword = listOf("RELEASE", "FINAL", "GA").any { version.toUpperCase().contains(it) }
+    val regex = "^[0-9,.v-]+(-r)?$".toRegex()
+    val isStable = stableKeyword || regex.matches(version)
+    return isStable.not()
 }

@@ -3,7 +3,6 @@ import org.gradle.kotlin.dsl.invoke
 plugins {
     id("com.android.library")
     kotlin("android")
-    id("jacoco")
     id("de.mannodermaus.android-junit5")
     id("org.jetbrains.dokka")
 }
@@ -30,16 +29,6 @@ android {
         exclude("META-INF/AL2.0")
         exclude("META-INF/LGPL2.1")
     }
-
-    publishing {
-        this.multipleVariants {
-            withSourcesJar()
-        }
-    }
-}
-
-jacoco {
-    toolVersion = "0.8.7"
 }
 
 tasks {
@@ -47,13 +36,6 @@ tasks {
         kotlinOptions.jvmTarget = "11"
         kotlinOptions.freeCompilerArgs += "-Xopt-in=kotlin.RequiresOptIn"
         kotlinOptions.freeCompilerArgs += "-Xexplicit-api=strict"
-    }
-
-    withType<JacocoReport> {
-        reports {
-            csv.isEnabled = false
-            html.isEnabled = false
-        }
     }
 }
 
