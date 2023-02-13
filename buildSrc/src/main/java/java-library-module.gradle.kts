@@ -5,9 +5,9 @@ plugins {
     `java-library`
 }
 
-java {
-    withSourcesJar()
-}
+//java {
+//    withSourcesJar()
+//}
 
 tasks {
     test {

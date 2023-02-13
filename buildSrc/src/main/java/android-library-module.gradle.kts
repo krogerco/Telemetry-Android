@@ -31,11 +31,11 @@ android {
         exclude("META-INF/LGPL2.1")
     }
 
-    publishing {
-        this.multipleVariants {
-            withSourcesJar()
-        }
-    }
+//    publishing {
+//        this.multipleVariants {
+//            withSourcesJar()
+//        }
+//    }
 }
 
 jacoco {
