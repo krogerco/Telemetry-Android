@@ -52,7 +52,7 @@ Telemetry solves this problem by unifying the pipeline for reporting all such ev
 
 To add Telemetry to your project, add the follow to your dependencies:
 
-`implementation("native-platform:telemetry:<version>")`
+`implementation("com.kroger:telemetry:<version>")`
 
 There are additional relays that are published in conjunction with Telemetry. See [here](#additional-relays) for a list that includes their artifact names.
 
@@ -366,7 +366,7 @@ The following is a list of additional Relays and their artifact names:
 
 #### **Android Relays**
 
-`"native-platform:telemetry-android:<version>"`
+`"com.kroger:telemetry-android:<version>"`
 
 This artifact contains additional Relays:
 
@@ -375,7 +375,7 @@ This artifact contains additional Relays:
 
 #### **FirebaseAnalyticsRelay**
 
-`"native-platform:telemetry-firebase:<version>"`
+`"com.kroger:telemetry-firebase:<version>"`
 
 This Relay will log `DeveloperMetricsFacet`s to Firebase Analytics. See
 the [Firebase documentation](https://firebase.google.com/docs/analytics/get-started?platform=android)
@@ -384,7 +384,7 @@ for instructions on how to setup Firebase for your project.
 #### **FirebaseCrashlyticsRelay**
 A Relay that sends data to Firebase Crashlytics to be included in crash reports and non-fatal error reports.
 
-`"native-platform:telemetry-firebase:<version>"`
+`"com.kroger:telemetry-firebase:<version>"`
 
 This Relay will log any of the following `Facet`s to Firebase Crashlytics
  - CrashlyticsKey
