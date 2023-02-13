@@ -20,3 +20,7 @@ runs:
       uses: gradle/gradle-build-action@v2
       with:
         arguments: publishAllPublicationsToMavenCentral --no-daemon --no-parallel
+    - name: Release
+      uses: gradle/gradle-build-action@v2
+      with:
+        arguments: closeAndReleaseRepository
