@@ -1,5 +1,3 @@
-import org.gradle.kotlin.dsl.invoke
-
 plugins {
     id("com.android.library")
     kotlin("android")
@@ -30,12 +28,6 @@ android {
         exclude("META-INF/AL2.0")
         exclude("META-INF/LGPL2.1")
     }
-
-//    publishing {
-//        this.multipleVariants {
-//            withSourcesJar()
-//        }
-//    }
 }
 
 jacoco {
