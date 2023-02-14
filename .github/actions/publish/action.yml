@@ -20,7 +20,7 @@ runs:
       uses: gradle/gradle-build-action@v2
       with:
         arguments: publish --no-daemon --no-parallel
-    - name: Publish
+    - name: Close Staging Repo and Release to Sonatype OSS
       uses: gradle/gradle-build-action@v2
       with:
         arguments: closeAndReleaseRepository
