@@ -5,10 +5,10 @@ inputs:
   ktlint_version:
     description: 'The version of ktlint to use'
     required: true
+
 runs:
   using: composite
   steps:
-    - uses: actions/checkout@v3.1.0
     - name: Download ktlint
       shell: bash
       run: curl -sSLO https://github.com/pinterest/ktlint/releases/download/${{ inputs.ktlint_version }}/ktlint && chmod a+x ktlint

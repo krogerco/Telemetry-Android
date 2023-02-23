@@ -1,5 +1,3 @@
-import org.gradle.kotlin.dsl.invoke
-
 plugins {
     id("com.android.library")
     kotlin("android")
@@ -24,12 +22,6 @@ android {
 
     kotlinOptions {
         jvmTarget = "11"
-    }
-
-    publishing {
-        singleVariant("release") {
-            withSourcesJar()
-        }
     }
 
     packagingOptions {

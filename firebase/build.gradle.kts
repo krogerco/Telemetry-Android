@@ -4,12 +4,6 @@ plugins {
 }
 
 android {
-    buildTypes {
-        getByName("release") {
-            consumerProguardFile("proguard-rules.pro")
-        }
-    }
-
     defaultConfig {
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
     }

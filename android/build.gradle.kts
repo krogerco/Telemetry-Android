@@ -3,14 +3,6 @@ plugins {
     id(Plugins.release.id)
 }
 
-android {
-    buildTypes {
-        getByName("release") {
-            consumerProguardFile("proguard-rules.pro")
-        }
-    }
-}
-
 dependencies {
     api(project(":telemetry"))
 

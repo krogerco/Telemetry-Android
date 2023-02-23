@@ -1,5 +1,5 @@
 name: Publish
-description: 'Publish the artifactory '
+description: 'Publish to Sonatype'
 
 inputs:
   java_version:
@@ -10,11 +10,17 @@ runs:
   using: composite
   steps:
     - name: Checkout
-      uses: actions/checkout@v3.1.0
-    - uses: actions/setup-java@v3.5.1
+      uses: actions/checkout@v3
+    - name: Setup Java
+      uses: actions/setup-java@v3
       with:
         distribution: 'zulu'
         java-version: ${{ inputs.java_version }}
-    - uses: gradle/gradle-build-action@v2
+    - name: Publish
+      uses: gradle/gradle-build-action@v2
       with:
-        arguments: publish
+        arguments: publish --no-daemon --no-parallel
+    - name: Close Staging Repo and Release to Sonatype OSS
+      uses: gradle/gradle-build-action@v2
+      with:
+        arguments: closeAndReleaseRepository
