@@ -39,6 +39,13 @@ jobs:
         with:
           ktlint_version: ${{ env.ktlint_version }}
 
+  validation:
+    name: "Validation"
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: gradle/actions/wrapper-validation@v3
+
   determine_version:
     name: Version Determination
     runs-on: ubuntu-latest
@@ -61,7 +68,7 @@ jobs:
 
   build:
     name: Build
-    needs: [ commit_lint, code_lint ]
+    needs: [ commit_lint, code_lint, validation ]
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
@@ -76,7 +83,7 @@ jobs:
 
   unit_tests:
     name: Unit Tests
-    needs: [ commit_lint, code_lint ]
+    needs: [ commit_lint, code_lint, validation ]
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
