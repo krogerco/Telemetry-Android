@@ -33,8 +33,7 @@ import io.mockk.just
 import io.mockk.mockk
 import io.mockk.runs
 import io.mockk.verify
-import kotlinx.coroutines.ExperimentalCoroutinesApi
-import kotlinx.coroutines.test.runBlockingTest
+import kotlinx.coroutines.test.runTest
 import org.junit.jupiter.api.Test
 
 internal class FirebaseAnalyticsRelayTest {
@@ -47,10 +46,9 @@ internal class FirebaseAnalyticsRelayTest {
         override val eventName: String = fakeName
     }
 
-    @OptIn(ExperimentalCoroutinesApi::class)
     @Test
     fun `GIVEN event with firebase facet WHEN recorded THEN name matches in logged event`() =
-        runBlockingTest {
+        runTest {
             every { mockFirebaseAnalytics.logEvent(any(), any()) } just runs
 
             firebaseAnalyticsRelay.process(

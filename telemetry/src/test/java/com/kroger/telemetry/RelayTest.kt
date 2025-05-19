@@ -27,7 +27,7 @@ package com.kroger.telemetry
 import com.kroger.telemetry.facet.Facet
 import com.kroger.telemetry.util.FakeEvent
 import kotlinx.coroutines.ExperimentalCoroutinesApi
-import kotlinx.coroutines.test.runBlockingTest
+import kotlinx.coroutines.test.runTest
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.Test
@@ -36,7 +36,7 @@ import org.junit.jupiter.api.Test
 internal class RelayTest {
     @Test
     fun `GIVEN relay with filter in processing WHEN event processed THEN facets easily extracted`() =
-        runBlockingTest {
+        runTest {
             data class StringFacet(val value: String) : Facet
             data class IntFacet(val value: Int) : Facet
 
@@ -63,7 +63,7 @@ internal class RelayTest {
 
     @Test
     fun `GIVEN typed relay WHEN event processed with relevant facet type THEN event is processed`() =
-        runBlockingTest {
+        runTest {
             data class StringFacet(val value: String) : Facet
             data class IntFacet(val value: Int) : Facet
 
@@ -88,7 +88,7 @@ internal class RelayTest {
 
     @Test
     fun `GIVEN typed relay WHEN event processed without relevant facet type THEN event is not processed`() =
-        runBlockingTest {
+        runTest {
             data class StringFacet(val value: String) : Facet
             data class IntFacet(val value: Int) : Facet
 
@@ -121,7 +121,7 @@ internal class RelayTest {
             TypedRelay<TestFacet> by Relay.buildTypedRelay({ facet -> passed = facet.passed })
 
         val passingFacet = TestFacet(passed = true)
-        runBlockingTest {
+        runTest {
             TestTypedRelay().process(FakeEvent(facets = listOf(passingFacet)))
         }
 

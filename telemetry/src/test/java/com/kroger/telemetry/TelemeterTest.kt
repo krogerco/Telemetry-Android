@@ -32,29 +32,20 @@ import com.kroger.telemetry.facet.ThreadData
 import com.kroger.telemetry.facet.UnresolvedFacet
 import com.kroger.telemetry.util.FakeEvent
 import com.kroger.telemetry.util.FakeRelay
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
-import kotlinx.coroutines.test.TestCoroutineScope
-import kotlinx.coroutines.test.runBlockingTest
+import kotlinx.coroutines.test.StandardTestDispatcher
+import kotlinx.coroutines.test.UnconfinedTestDispatcher
+import kotlinx.coroutines.test.runTest
 import kotlinx.coroutines.withContext
-import org.junit.jupiter.api.AfterEach
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.Test
+import kotlin.time.Duration.Companion.milliseconds
 
-@ExperimentalCoroutinesApi
 internal class TelemeterTest {
-    private val scope = TestCoroutineScope()
-
-    @AfterEach
-    fun teardown() {
-        scope.cleanupTestCoroutines()
-    }
-
     @Test
-    fun `GIVEN telemeter with relays WHEN event recorded THEN relays receive events`() {
+    fun `GIVEN telemeter with relays WHEN event recorded THEN relays receive events`() = runTest {
         var relayOneProcessCount = 0
         val relayOne = FakeRelay { relayOneProcessCount += 1 }
 
@@ -63,42 +54,43 @@ internal class TelemeterTest {
 
         val telemeter = Telemeter.build(
             relays = listOf(relayOne, relayTwo),
-            flowConfig = Telemeter.defaultTelemetryFlowConfig.copy(scope = scope),
+            flowConfig = Telemeter.defaultTelemetryFlowConfig.copy(scope = backgroundScope),
         )
 
         val numEvents = 10_000
-        for (i in 1..numEvents) {
-            val event = FakeEvent(description = "event num $i")
-            telemeter.record(event)
+        repeat(numEvents) {
+            telemeter.record(FakeEvent(description = "event num $it"))
+            testScheduler.runCurrent()
         }
         assertTrue(relayOneProcessCount == numEvents && relayTwoProcessCount == numEvents)
     }
 
     @Test
-    fun `GIVEN faceted telemeter WHEN event recorded THEN facets are added to incoming events`() {
-        class TelemeterFacet : Facet
+    fun `GIVEN faceted telemeter WHEN event recorded THEN facets are added to incoming events`() =
+        runTest {
+            class TelemeterFacet : Facet
 
-        var facetIsPresent = false
-        val relay = FakeRelay { event ->
-            facetIsPresent = event.facets.any { facet -> facet is TelemeterFacet }
+            var facetIsPresent = false
+            val relay = FakeRelay { event ->
+                facetIsPresent = event.facets.any { facet -> facet is TelemeterFacet }
+            }
+
+            val telemeter = Telemeter.build(
+                relays = listOf(relay),
+                facets = listOf(TelemeterFacet()),
+                flowConfig = Telemeter.defaultTelemetryFlowConfig.copy(scope = backgroundScope),
+            )
+
+            val event = FakeEvent()
+            telemeter.record(event)
+            testScheduler.runCurrent()
+            assertTrue(facetIsPresent)
         }
-
-        val telemeter = Telemeter.build(
-            relays = listOf(relay),
-            facets = listOf(TelemeterFacet()),
-            flowConfig = Telemeter.defaultTelemetryFlowConfig.copy(scope = scope),
-        )
-
-        val event = FakeEvent()
-        telemeter.record(event)
-
-        assertTrue(facetIsPresent)
-    }
 
     // Please don't actually do this. In a perfect world, no mutable data would enter the pipeline
     // and relays would avoid trying to mutate data
     @Test
-    fun `GIVEN mutable facet WHEN facet is mutated downstream THEN changes are propagated`() {
+    fun `GIVEN mutable facet WHEN facet is mutated downstream THEN changes are propagated`() = runTest {
         class MutableFacet(var mutableField: String) : Facet
 
         val mutatedString = "i'm a mutation"
@@ -117,18 +109,19 @@ internal class TelemeterTest {
 
         val telemeter = Telemeter.build(
             relays = listOf(mutatingRelay, mutationCheckingRelay),
-            flowConfig = Telemeter.defaultTelemetryFlowConfig.copy(scope = scope),
+            flowConfig = Telemeter.defaultTelemetryFlowConfig.copy(scope = backgroundScope),
         )
 
         val event = FakeEvent("", listOf(MutableFacet("i'm mutating")))
 
         telemeter.record(event)
+        testScheduler.runCurrent()
         assertTrue(facetIsMutated)
     }
 
     @Test
     fun `GIVEN parent telemeter WHEN child telemeter created THEN child can attach additional facets scoped to child`() =
-        runBlockingTest {
+        runTest {
             class ParentFacet : Facet
             class ChildFacet : Facet
 
@@ -139,7 +132,7 @@ internal class TelemeterTest {
             val parentFacet = ParentFacet()
             val childFacet = ChildFacet()
             val parent = Telemeter.build(
-                flowConfig = Telemeter.defaultTelemetryFlowConfig.copy(scope = scope),
+                flowConfig = Telemeter.defaultTelemetryFlowConfig.copy(scope = backgroundScope),
                 relays = listOf(fakeRelay),
                 facets = listOf(parentFacet),
             )
@@ -148,7 +141,7 @@ internal class TelemeterTest {
             val event = FakeEvent()
             parent.record(event)
             child.record(event)
-
+            testScheduler.runCurrent()
             assertEquals(1, recordedEvents[0].facets.size)
             assertEquals(parentFacet, recordedEvents[0].facets[0])
             assertEquals(2, recordedEvents[1].facets.size)
@@ -157,7 +150,7 @@ internal class TelemeterTest {
         }
 
     @Test
-    fun `GIVEN telemeter with default flow config WHEN event recorded by relay with long running process function THEN shorter relay processing not blocked`() {
+    fun `GIVEN telemeter with default flow config WHEN event recorded by relay with long running process function THEN shorter relay processing not blocked`() = runTest {
         var completedLongRelayJobs = 0
         val longRelay = FakeRelay {
             delay(500)
@@ -171,22 +164,24 @@ internal class TelemeterTest {
         val telemeter = Telemeter.build(
             relays = listOf(longRelay, shortRelay),
             facets = listOf(),
-            flowConfig = Telemeter.defaultTelemetryFlowConfig.copy(scope = scope),
+            flowConfig = Telemeter.defaultTelemetryFlowConfig.copy(scope = backgroundScope),
         )
 
         val numEvents = 10_000
-        for (i in 1..numEvents) telemeter.record(FakeEvent())
-
+        repeat(numEvents) {
+            telemeter.record(FakeEvent())
+            testScheduler.runCurrent()
+        }
         assertTrue(completedShortRelayJobs > completedLongRelayJobs)
-        scope.advanceUntilIdle()
         assertEquals(numEvents, completedShortRelayJobs)
     }
 
     @Test
-    fun `GIVEN telemeter with default shared flow config WHEN event recorded by relay with long running process function THEN all events processed`() {
+    fun `GIVEN telemeter with default shared flow config WHEN event recorded by relay with long running process function THEN all events processed`() = runTest(UnconfinedTestDispatcher()) {
+        val longRelayDelay = 500.milliseconds
         var completedLongRelayJobs = 0
         val longRelay = FakeRelay {
-            delay(500)
+            delay(longRelayDelay)
             completedLongRelayJobs += 1
         }
         var completedShortRelayJobs = 0
@@ -197,24 +192,25 @@ internal class TelemeterTest {
         val telemeter = Telemeter.build(
             relays = listOf(longRelay, shortRelay),
             facets = listOf(),
-            flowConfig = Telemeter.defaultSharedFlowConfig.copy(scope = scope),
+            flowConfig = Telemeter.defaultSharedFlowConfig.copy(scope = backgroundScope),
         )
 
         val numEvents = 10_000
-        for (i in 1..numEvents) telemeter.record(FakeEvent())
-
-        assertTrue(completedShortRelayJobs > completedLongRelayJobs)
-        scope.advanceUntilIdle()
+        repeat(numEvents) {
+            telemeter.record(FakeEvent())
+        }
+        testScheduler.advanceTimeBy(longRelayDelay * (numEvents + 1))
+        assertTrue(completedShortRelayJobs == completedLongRelayJobs)
         assertEquals(numEvents, completedShortRelayJobs)
         assertEquals(numEvents, completedLongRelayJobs)
     }
 
     @Test
-    fun `GIVEN child telemeter with additional relay WHEN event recorded THEN additional relay will receive events`() {
+    fun `GIVEN child telemeter with additional relay WHEN event recorded THEN additional relay will receive events`() = runTest {
         val childFacet = object : Facet {}
         val parent = Telemeter.build(
             relays = listOf(),
-            flowConfig = Telemeter.defaultTelemetryFlowConfig.copy(scope = scope),
+            flowConfig = Telemeter.defaultTelemetryFlowConfig.copy(scope = backgroundScope),
         )
 
         var childProcessed = false
@@ -228,6 +224,7 @@ internal class TelemeterTest {
         )
 
         child.record(FakeEvent())
+        testScheduler.runCurrent()
         assertTrue(childProcessed)
     }
 
@@ -236,7 +233,7 @@ internal class TelemeterTest {
      * relays.
      */
     @Test
-    fun `GIVEN parent and child telemeter with identical relay added to both WHEN events recorded THEN processed twice`() {
+    fun `GIVEN parent and child telemeter with identical relay added to both WHEN events recorded THEN processed twice`() = runTest {
         var numProcessed = 0
 
         class RepeatedRelay : Relay {
@@ -248,16 +245,17 @@ internal class TelemeterTest {
 
         val parent = Telemeter.build(
             relays = listOf(RepeatedRelay()),
-            flowConfig = Telemeter.defaultTelemetryFlowConfig.copy(scope = scope),
+            flowConfig = Telemeter.defaultTelemetryFlowConfig.copy(scope = backgroundScope),
         )
         val child = parent.child(relays = listOf(RepeatedRelay()))
 
         child.record(FakeEvent())
+        testScheduler.runCurrent()
         assertTrue(numProcessed == 2)
     }
 
     @Test
-    fun `GIVEN event to be recorded WHEN passed additional facets THEN facets are relayed`() {
+    fun `GIVEN event to be recorded WHEN passed additional facets THEN facets are relayed`() = runTest {
         val recorded = mutableListOf<Event>()
         val fakeRelay = FakeRelay {
             if (it.facets.any { facet -> facet is Prefix.App }) {
@@ -267,7 +265,7 @@ internal class TelemeterTest {
 
         val telemeter = Telemeter.build(
             relays = listOf(fakeRelay),
-            flowConfig = Telemeter.defaultTelemetryFlowConfig.copy(scope = scope),
+            flowConfig = Telemeter.defaultTelemetryFlowConfig.copy(scope = backgroundScope),
         )
 
         val additionalFacet = Prefix.App("")
@@ -277,12 +275,12 @@ internal class TelemeterTest {
         }
 
         telemeter.record(event, listOf(additionalFacet))
-
+        testScheduler.runCurrent()
         assertTrue(recorded[0].facets[0] is Prefix.App)
     }
 
     @Test
-    fun `GIVEN prefixes attached through several children WHEN event recorded THEN prefixes remain in order they were added`() {
+    fun `GIVEN prefixes attached through several children WHEN event recorded THEN prefixes remain in order they were added`() = runTest {
         val recorded = mutableListOf<Event>()
         val fakeRelay = FakeRelay {
             recorded.add(it)
@@ -295,7 +293,7 @@ internal class TelemeterTest {
             .build(
                 relays = listOf(fakeRelay),
                 facets = listOf(firstPrefix),
-                flowConfig = Telemeter.defaultTelemetryFlowConfig.copy(scope = scope),
+                flowConfig = Telemeter.defaultTelemetryFlowConfig.copy(scope = backgroundScope),
             )
             .child(facets = listOf(secondPrefix))
             .child(facets = listOf(thirdPrefix))
@@ -306,14 +304,14 @@ internal class TelemeterTest {
                 override val facets: List<Facet> = listOf()
             },
         )
-
+        testScheduler.runCurrent()
         assertEquals(firstPrefix, recorded[0].facets[0])
         assertEquals(secondPrefix, recorded[0].facets[1])
         assertEquals(thirdPrefix, recorded[0].facets[2])
     }
 
     @Test
-    fun `GIVEN computed facet WHEN recorded THEN computation can be run in relay`() {
+    fun `GIVEN computed facet WHEN recorded THEN computation can be run in relay`() = runTest {
         var processed = false
         val relay = object : TypedRelay<Facet.Computed<*>> {
             override val type: Class<Facet.Computed<*>> = Facet.Computed::class.java
@@ -324,21 +322,20 @@ internal class TelemeterTest {
 
         val telemeter = Telemeter.build(
             relays = listOf(relay),
-            flowConfig = Telemeter.defaultTelemetryFlowConfig.copy(scope = scope),
+            flowConfig = Telemeter.defaultTelemetryFlowConfig.copy(scope = backgroundScope),
         )
         val computedFacet = object : Facet.Computed<Boolean> {
             override val compute: () -> Boolean = {
                 true
             }
         }
-
         telemeter.record(FakeEvent(facets = listOf(computedFacet)))
-
+        testScheduler.runCurrent()
         assertTrue(processed)
     }
 
     @Test
-    fun `GIVEN lazy facet WHEN recorded THEN lazy value will be result of computation `() {
+    fun `GIVEN lazy facet WHEN recorded THEN lazy value will be result of computation`() = runTest {
         var computedCount: Int? = null
         val relay = object : TypedRelay<Facet.Lazy<*>> {
             override val type: Class<Facet.Lazy<*>> = Facet.Lazy::class.java
@@ -349,19 +346,19 @@ internal class TelemeterTest {
 
         val telemeter = Telemeter.build(
             relays = listOf(relay),
-            flowConfig = Telemeter.defaultTelemetryFlowConfig.copy(scope = scope),
+            flowConfig = Telemeter.defaultTelemetryFlowConfig.copy(scope = backgroundScope),
         )
         val lazyFacet = object : Facet.Lazy<Int>() {
             override val compute: () -> Int = { 1 }
         }
 
         telemeter.record(FakeEvent(facets = listOf(lazyFacet)))
-
+        testScheduler.runCurrent()
         assertEquals(1, computedCount)
     }
 
     @Test
-    fun `GIVEN telemeter configured to track thread data WHEN event recorded THEN additional facet is included`() {
+    fun `GIVEN telemeter configured to track thread data WHEN event recorded THEN additional facet is included`() = runTest {
         val currentThreadName = Thread.currentThread().name
         val recordedFacets = mutableListOf<Facet>()
         val relay = FakeRelay { recordedFacets.addAll(it.facets) }
@@ -370,25 +367,27 @@ internal class TelemeterTest {
             relays = listOf(relay),
             flowConfig = Telemeter.defaultTelemetryFlowConfig.copy(
                 shouldPropagateThreadData = true,
-                scope = scope,
+                scope = backgroundScope,
             ),
         )
 
         telemeter.record(FakeEvent())
-
+        testScheduler.runCurrent()
         val threadData = recordedFacets[0] as ThreadData
         assertEquals(currentThreadName, threadData.threadName)
         assertTrue(threadData.currentStackTrace.isNotEmpty())
     }
 
     @Test
-    fun `GIVEN relay that processes on different thread WHEN event recorded with thread data THEN original thread is preserved`() {
+    fun `GIVEN relay that processes on different thread WHEN event recorded with thread data THEN original thread is preserved`() = runTest {
         val currentThreadName = Thread.currentThread().name
+        val dispatcher = StandardTestDispatcher(testScheduler)
         val recordedFacets = mutableListOf<Facet>()
         var processedThread = ""
+
         val relay = FakeRelay {
-            scope.launch {
-                withContext(Dispatchers.IO) {
+            launch {
+                withContext(dispatcher) {
                     recordedFacets.addAll(it.facets)
                     processedThread = Thread.currentThread().name
                 }
@@ -399,12 +398,12 @@ internal class TelemeterTest {
             relays = listOf(relay),
             flowConfig = Telemeter.defaultTelemetryFlowConfig.copy(
                 shouldPropagateThreadData = true,
-                scope = scope,
+                scope = backgroundScope,
             ),
         )
 
         telemeter.record(FakeEvent())
-
+        testScheduler.runCurrent()
         while (processedThread.isEmpty()) Unit
         val threadData = recordedFacets[0] as ThreadData
         assertEquals(currentThreadName, threadData.threadName)
@@ -412,7 +411,7 @@ internal class TelemeterTest {
     }
 
     @Test
-    fun `GIVEN telemeter tree with more than one node configured to record thread data WHEN event recorded THEN only one thread data recorded`() {
+    fun `GIVEN telemeter tree with more than one node configured to record thread data WHEN event recorded THEN only one thread data recorded`() = runTest {
         val recordedFacets = mutableListOf<Facet>()
         val relay = FakeRelay { recordedFacets.addAll(it.facets) }
 
@@ -420,18 +419,18 @@ internal class TelemeterTest {
             relays = listOf(relay),
             flowConfig = Telemeter.defaultTelemetryFlowConfig.copy(
                 shouldPropagateThreadData = true,
-                scope = scope,
+                scope = backgroundScope,
             ),
         ).child(listOf())
 
         child.record(FakeEvent())
-
+        testScheduler.runCurrent()
         val threadDataFacets = recordedFacets.filterIsInstance<ThreadData>()
         assertEquals(1, threadDataFacets.size)
     }
 
     @Test
-    fun `GIVEN telemeter with relay WHEN relay throws THEN telemeter catches and records error without looping`() {
+    fun `GIVEN telemeter with relay WHEN relay throws THEN telemeter catches and records error without looping`() = runTest {
         val recorded = mutableListOf<Event>()
         val goodRelay = FakeRelay {
             recorded.add(it)
@@ -444,18 +443,18 @@ internal class TelemeterTest {
 
         val telemeter = Telemeter.build(
             relays = listOf(badRelay, goodRelay),
-            flowConfig = Telemeter.defaultTelemetryFlowConfig.copy(scope = scope),
+            flowConfig = Telemeter.defaultTelemetryFlowConfig.copy(scope = backgroundScope),
         )
 
         telemeter.record(FakeEvent())
-
+        testScheduler.runCurrent()
         val failureEvents = recorded.filter { it.facets.any { facet -> facet is Failure } }
         val failureFacet = failureEvents[0].facets[0] as Failure
         assertEquals(exception, failureFacet.throwable)
     }
 
     @Test
-    fun `Given telemeter with facetResolvers, When record is called with unresolved facets, Then they should be resolved`() {
+    fun `Given telemeter with facetResolvers, When record is called with unresolved facets, Then they should be resolved`() = runTest {
         val recorded = mutableListOf<Event>()
         val recordingRelay = FakeRelay {
             recorded.add(it)
@@ -483,7 +482,7 @@ internal class TelemeterTest {
         val telemeter = Telemeter.build(
             relays = listOf(recordingRelay),
             facetResolvers = mapOf(testFacetResolver.getType() to testFacetResolver),
-            flowConfig = Telemeter.defaultTelemetryFlowConfig.copy(scope = scope),
+            flowConfig = Telemeter.defaultTelemetryFlowConfig.copy(scope = backgroundScope),
         )
 
         val numEvents = 10
@@ -501,7 +500,7 @@ internal class TelemeterTest {
     }
 
     @Test
-    fun `Given telemeter with a facetResolver that returns two facets, When record is called with an unresolved facet, Then return 2 resolved facets`() {
+    fun `Given telemeter with a facetResolver that returns two facets, When record is called with an unresolved facet, Then return 2 resolved facets`() = runTest {
         val recorded = mutableListOf<Event>()
         val recordingRelay = FakeRelay {
             recorded.add(it)
@@ -532,7 +531,7 @@ internal class TelemeterTest {
         val telemeter = Telemeter.build(
             relays = listOf(recordingRelay),
             facetResolvers = mapOf(testFacetResolver.getType() to testFacetResolver),
-            flowConfig = Telemeter.defaultTelemetryFlowConfig.copy(scope = scope),
+            flowConfig = Telemeter.defaultTelemetryFlowConfig.copy(scope = backgroundScope),
         )
 
         val numEvents = 10
