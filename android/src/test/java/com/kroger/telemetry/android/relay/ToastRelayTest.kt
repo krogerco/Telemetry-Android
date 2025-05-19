@@ -39,7 +39,11 @@ internal class ToastRelayTest {
     private class FakeToaster : Toaster {
         var didToast = false
         var fakeFunToast: (String, Int) -> Unit = { _, _ -> didToast = true }
-        override suspend fun toast(message: String, length: Int) = fakeFunToast(message, length)
+
+        override suspend fun toast(
+            message: String,
+            length: Int,
+        ) = fakeFunToast(message, length)
     }
 
     private data class TestConfig(
@@ -92,10 +96,11 @@ internal class ToastRelayTest {
     @Test
     fun `GIVEN toast relay configured to toast all WHEN event received no significance THEN event is not toasted`() =
         runTest {
-            val config = TestConfig().copy(
-                toastSignificantEvents = true,
-                minimumSignificance = Significance.ERROR,
-            )
+            val config =
+                TestConfig().copy(
+                    toastSignificantEvents = true,
+                    minimumSignificance = Significance.ERROR,
+                )
             val relay = config.getRelay()
 
             relay.process(
@@ -110,10 +115,11 @@ internal class ToastRelayTest {
     @Test
     fun `GIVEN toast relay configured to toast all WHEN event received with lower than minimum significance THEN event is not toasted`() =
         runTest {
-            val config = TestConfig().copy(
-                toastSignificantEvents = true,
-                minimumSignificance = Significance.ERROR,
-            )
+            val config =
+                TestConfig().copy(
+                    toastSignificantEvents = true,
+                    minimumSignificance = Significance.ERROR,
+                )
             val relay = config.getRelay()
 
             relay.process(
@@ -128,10 +134,11 @@ internal class ToastRelayTest {
     @Test
     fun `GIVEN toast relay configured to toast all WHEN event received with minimum significance THEN event is toasted`() =
         runTest {
-            val config = TestConfig().copy(
-                toastSignificantEvents = true,
-                minimumSignificance = Significance.ERROR,
-            )
+            val config =
+                TestConfig().copy(
+                    toastSignificantEvents = true,
+                    minimumSignificance = Significance.ERROR,
+                )
             val relay = config.getRelay()
 
             relay.process(
@@ -182,8 +189,9 @@ internal class ToastRelayTest {
     fun `GIVEN config with mutable backing data WHEN backing data is changed THEN config reflects update`() {
         val mutableBackingInstance = mutableListOf(false)
 
-        class MutableConfig(private val mutableBackingProp: List<Boolean>) :
-            ToastRelay.Configuration by ToastRelay.Configuration.Default() {
+        class MutableConfig(
+            private val mutableBackingProp: List<Boolean>,
+        ) : ToastRelay.Configuration by ToastRelay.Configuration.Default() {
             override var enabled: Boolean
                 get() = mutableBackingProp.first()
                 set(_) = Unit

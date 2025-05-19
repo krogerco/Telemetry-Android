@@ -40,9 +40,9 @@ import javax.inject.Inject
 public class FirebaseAnalyticsRelay @Inject constructor(
     private val firebaseAnalytics: FirebaseAnalytics,
 ) : Relay by Relay.buildTypedRelay<DeveloperMetricsFacet>(
-    { facet ->
-        firebaseAnalytics.logEvent(facet.eventName, facet.compute()?.toBundle())
-    },
-)
+        { facet ->
+            firebaseAnalytics.logEvent(facet.eventName, facet.compute()?.toBundle())
+        },
+    )
 
 internal fun Map<String, Any?>.toBundle(): Bundle = bundleOf(*this.toList().toTypedArray())

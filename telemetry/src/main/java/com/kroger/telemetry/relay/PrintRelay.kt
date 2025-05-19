@@ -46,7 +46,6 @@ public open class PrintRelay(
         println("${message.tag} --- ${message.value}")
     },
 ) : Relay {
-
     /**
      * @property defaultSignificance Significance level to attach to Events if the Event does not include one.
      * @property minimumSignificance If an Event is less significant, it will not be processed.
@@ -75,15 +74,17 @@ public open class PrintRelay(
         val tag = event.generateTag()
         val significance = event.getSignificance()
         if (significance < configuration.minimumSignificance) return
-        val message = Message(
-            tag = tag,
-            significance = significance,
-            value = if (configuration.detailedMode.not()) {
-                event.toSimpleMessage()
-            } else {
-                event.toDetailedMessage()
-            },
-        )
+        val message =
+            Message(
+                tag = tag,
+                significance = significance,
+                value =
+                    if (configuration.detailedMode.not()) {
+                        event.toSimpleMessage()
+                    } else {
+                        event.toDetailedMessage()
+                    },
+            )
         printer(message)
     }
 
@@ -98,25 +99,27 @@ public open class PrintRelay(
         val prefixes = facets.filterIsInstance<Prefix>()
         val significance = getSignificance()
         return if (configuration.detailedMode) {
-            val allPrefixes = prefixes.joinToString(separator) { it.value }
+            val allPrefixes = prefixes.joinToString(SEPARATOR) { it.value }
             listOf(
                 Telemeter.TAG,
                 significance,
                 allPrefixes,
-            ).joinToString(separator)
+            ).joinToString(SEPARATOR)
         } else {
             val mostLocalPrefix = prefixes.lastOrNull()?.value
             listOfNotNull(
                 Telemeter.TAG,
                 significance,
                 mostLocalPrefix,
-            ).joinToString(separator)
+            ).joinToString(SEPARATOR)
         }
     }
 
     // Get the highest significance level attached to the event.
-    private fun Event.getSignificance(): Significance = facets
-        .filterIsInstance<Significance>().maxOrNull() ?: configuration.defaultSignificance
+    private fun Event.getSignificance(): Significance =
+        facets
+            .filterIsInstance<Significance>()
+            .maxOrNull() ?: configuration.defaultSignificance
 
     public data class Message(
         val tag: String,
@@ -125,7 +128,7 @@ public open class PrintRelay(
     )
 
     public companion object {
-        internal const val separator = " | "
+        internal const val SEPARATOR = " | "
     }
 }
 
@@ -136,12 +139,13 @@ public fun Telemeter.log(
     tag: String? = null,
     message: String,
     significance: Significance = Significance.DEBUG,
-): Unit = record(
-    object : Event {
-        override val description: String = (tag?.let { "$tag - " } ?: "") + message
-        override val facets: List<Facet> = listOf(significance)
-    },
-)
+): Unit =
+    record(
+        object : Event {
+            override val description: String = (tag?.let { "$tag - " } ?: "") + message
+            override val facets: List<Facet> = listOf(significance)
+        },
+    )
 
 /**
  * Convenience method to log a message to Logcat with a custom [Significance]
@@ -152,59 +156,77 @@ public fun Telemeter.logError(
     message: String,
     significance: Significance = Significance.ERROR,
     throwable: Throwable? = null,
-): Unit = record(
-    object : Event {
-        val usedTag = tag?.let {
-            "$tag "
-        } ?: ""
-        val usedThrowableMessage = throwable?.let {
-            " - ${throwable.message}"
-        } ?: ""
-        val usedMessage = usedTag + message + usedThrowableMessage
+): Unit =
+    record(
+        object : Event {
+            val usedTag =
+                tag?.let {
+                    "$tag "
+                } ?: ""
+            val usedThrowableMessage =
+                throwable?.let {
+                    " - ${throwable.message}"
+                } ?: ""
+            val usedMessage = usedTag + message + usedThrowableMessage
 
-        // This is a list so it can be easily combined below
-        val failureFacet = throwable?.let {
-            listOf(Failure(usedMessage, throwable))
-        } ?: listOf()
-        override val description: String = usedMessage
-        override val facets: List<Facet> = listOf(significance) + failureFacet
-    },
-)
+            // This is a list so it can be easily combined below
+            val failureFacet =
+                throwable?.let {
+                    listOf(Failure(usedMessage, throwable))
+                } ?: listOf()
+            override val description: String = usedMessage
+            override val facets: List<Facet> = listOf(significance) + failureFacet
+        },
+    )
 
 /**
  * Convenience method to log a message to Logcat with [Significance.VERBOSE]
  */
-public fun Telemeter.v(tag: String? = null, message: String): Unit =
-    log(tag, message, Significance.VERBOSE)
+public fun Telemeter.v(
+    tag: String? = null,
+    message: String,
+): Unit = log(tag, message, Significance.VERBOSE)
 
 /**
  * Convenience method to log a message to Logcat with [Significance.DEBUG]
  */
-public fun Telemeter.d(tag: String? = null, message: String): Unit =
-    log(tag, message, Significance.DEBUG)
+public fun Telemeter.d(
+    tag: String? = null,
+    message: String,
+): Unit = log(tag, message, Significance.DEBUG)
 
 /**
  * Convenience method to log a message to Logcat with [Significance.INFORMATIONAL]
  */
-public fun Telemeter.i(tag: String? = null, message: String): Unit =
-    log(tag, message, Significance.INFORMATIONAL)
+public fun Telemeter.i(
+    tag: String? = null,
+    message: String,
+): Unit = log(tag, message, Significance.INFORMATIONAL)
 
 /**
  * Convenience method to log a message to Logcat with [Significance.WARNING]
  */
-public fun Telemeter.w(tag: String? = null, message: String): Unit =
-    log(tag, message, Significance.WARNING)
+public fun Telemeter.w(
+    tag: String? = null,
+    message: String,
+): Unit = log(tag, message, Significance.WARNING)
 
 /**
  * Convenience method to log a message to Logcat with [Significance.ERROR].
  * Throwables will be converted to [Failure] facets and included in the event.
  */
-public fun Telemeter.e(tag: String? = null, message: String, throwable: Throwable? = null): Unit =
-    logError(tag, message, Significance.ERROR, throwable)
+public fun Telemeter.e(
+    tag: String? = null,
+    message: String,
+    throwable: Throwable? = null,
+): Unit = logError(tag, message, Significance.ERROR, throwable)
 
 /**
  * Convenience method to log a message to Logcat with [Significance.INTERNAL_ERROR]
  * Throwables will be converted to [Failure] facets and included in the event.
  */
-public fun Telemeter.wtf(tag: String? = null, message: String, throwable: Throwable? = null): Unit =
-    logError(tag, message, Significance.INTERNAL_ERROR, throwable)
+public fun Telemeter.wtf(
+    tag: String? = null,
+    message: String,
+    throwable: Throwable? = null,
+): Unit = logError(tag, message, Significance.INTERNAL_ERROR, throwable)

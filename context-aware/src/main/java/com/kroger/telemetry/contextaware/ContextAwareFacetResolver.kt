@@ -30,8 +30,9 @@ import com.kroger.telemetry.facet.FacetResolver
 import com.kroger.telemetry.facet.UnresolvedFacet
 import javax.inject.Inject
 
-public class ContextAwareFacetResolver @Inject constructor(private val context: Context) :
-    FacetResolver {
+public class ContextAwareFacetResolver @Inject constructor(
+    private val context: Context,
+) : FacetResolver {
     override fun getType(): Class<ContextAwareFacet> = ContextAwareFacet::class.java
 
     override fun resolve(unresolvedFacet: UnresolvedFacet): List<Facet> =

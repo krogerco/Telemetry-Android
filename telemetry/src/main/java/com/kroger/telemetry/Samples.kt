@@ -29,32 +29,45 @@ import com.kroger.telemetry.facet.Prefix
 import com.kroger.telemetry.facet.Significance
 import com.kroger.telemetry.relay.PrintRelay
 
-private data class MyDataType(val data: String)
+private data class MyDataType(
+    val data: String,
+)
 
 internal fun topLevelExample() {
-    data class MyFacet(override val compute: () -> MyDataType) : Facet.Computed<MyDataType>
+    data class MyFacet(
+        override val compute: () -> MyDataType,
+    ) : Facet.Computed<MyDataType>
 
-    data class MyEvent(val thingThatHappened: String) : Event {
+    data class MyEvent(
+        val thingThatHappened: String,
+    ) : Event {
         override val description: String = thingThatHappened
-        override val facets: List<Facet> = listOf(
-            Significance.INFORMATIONAL,
-            MyFacet { /* expensive logic that results in */ MyDataType(thingThatHappened) },
-            /* other facets for other relays */
-        )
+        override val facets: List<Facet> =
+            listOf(
+                Significance.INFORMATIONAL,
+                MyFacet {
+                    // expensive logic that results in
+                    MyDataType(thingThatHappened)
+                },
+                // other facets for other relays
+            )
     }
 
     class MyRelay : TypedRelay<MyFacet> {
         override val type: Class<MyFacet> = MyFacet::class.java
+
         override suspend fun processFacet(facet: MyFacet) {
-            /* do something with */ facet.compute().data
+            // do something with
+            facet.compute().data
         }
     }
 
-    /* Make appTelemeter available to your application */
-    val appTelemeter = Telemeter.build(
-        relays = listOf(MyRelay()),
-        facets = listOf(Prefix.App("My Application Name")),
-    )
+    // Make appTelemeter available to your application
+    val appTelemeter =
+        Telemeter.build(
+            relays = listOf(MyRelay()),
+            facets = listOf(Prefix.App("My Application Name")),
+        )
 
     fun onThingHappened() {
         appTelemeter.record(MyEvent("a thing happened"))
@@ -67,12 +80,16 @@ internal fun childTelemeterSample(parentTelemeter: Telemeter) {
 }
 
 internal fun createTypedRelay() {
-    data class MyFacet(val myValue: String) : Facet
-    class MyTypedRelay : TypedRelay<MyFacet> by Relay.buildTypedRelay(
-        { myFacet ->
-            myFacet.myValue
-        },
-    )
+    data class MyFacet(
+        val myValue: String,
+    ) : Facet
+
+    class MyTypedRelay :
+        TypedRelay<MyFacet> by Relay.buildTypedRelay(
+            { myFacet ->
+                myFacet.myValue
+            },
+        )
 }
 
 private interface Toggles {
@@ -80,8 +97,9 @@ private interface Toggles {
 }
 
 internal fun samplePrintConfig() {
-    class PropertyBehaviorChangeConfig(private val toggles: Toggles) :
-        PrintRelay.Configuration by PrintRelay.Configuration.Default() {
+    class PropertyBehaviorChangeConfig(
+        private val toggles: Toggles,
+    ) : PrintRelay.Configuration by PrintRelay.Configuration.Default() {
         override var detailedMode: Boolean
             get() = toggles["PrintRelay Toggle"]
             set(_) = Unit

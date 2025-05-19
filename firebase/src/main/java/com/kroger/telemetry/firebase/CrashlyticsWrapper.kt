@@ -32,6 +32,21 @@ package com.kroger.telemetry.firebase
  * @sample crashlyticsWrapperImplementation
  */
 public interface CrashlyticsWrapper {
+    /**
+     * Records a custom key and value to be associated with subsequent fatal and non-fatal reports. Multiple calls to this method
+     * with the same key will update the value for that key. The value of any key at the time of a fatal or non-fatal event will
+     * be associated with that event. Keys and associated values are visible in the session view on the Firebase Crashlytics
+     * console. A maximum of 64 key/value pairs can be written, and new keys added beyond that limit will be ignored. Keys or
+     * values that exceed 1024 characters will be truncated.
+     *
+     * @param key A unique key
+     *
+     *@param value A value to be associated with the given key
+     */
+    public fun setCustomKey(
+        key: String,
+        value: String,
+    )
 
     /**
      * Records a custom key and value to be associated with subsequent fatal and non-fatal reports. Multiple calls to this method
@@ -44,7 +59,10 @@ public interface CrashlyticsWrapper {
      *
      *@param value A value to be associated with the given key
      */
-    public fun setCustomKey(key: String, value: String)
+    public fun setCustomKey(
+        key: String,
+        value: Boolean,
+    )
 
     /**
      * Records a custom key and value to be associated with subsequent fatal and non-fatal reports. Multiple calls to this method
@@ -57,7 +75,10 @@ public interface CrashlyticsWrapper {
      *
      *@param value A value to be associated with the given key
      */
-    public fun setCustomKey(key: String, value: Boolean)
+    public fun setCustomKey(
+        key: String,
+        value: Int,
+    )
 
     /**
      * Records a custom key and value to be associated with subsequent fatal and non-fatal reports. Multiple calls to this method
@@ -70,7 +91,10 @@ public interface CrashlyticsWrapper {
      *
      *@param value A value to be associated with the given key
      */
-    public fun setCustomKey(key: String, value: Int)
+    public fun setCustomKey(
+        key: String,
+        value: Long,
+    )
 
     /**
      * Records a custom key and value to be associated with subsequent fatal and non-fatal reports. Multiple calls to this method
@@ -83,7 +107,10 @@ public interface CrashlyticsWrapper {
      *
      *@param value A value to be associated with the given key
      */
-    public fun setCustomKey(key: String, value: Long)
+    public fun setCustomKey(
+        key: String,
+        value: Float,
+    )
 
     /**
      * Records a custom key and value to be associated with subsequent fatal and non-fatal reports. Multiple calls to this method
@@ -96,20 +123,10 @@ public interface CrashlyticsWrapper {
      *
      *@param value A value to be associated with the given key
      */
-    public fun setCustomKey(key: String, value: Float)
-
-    /**
-     * Records a custom key and value to be associated with subsequent fatal and non-fatal reports. Multiple calls to this method
-     * with the same key will update the value for that key. The value of any key at the time of a fatal or non-fatal event will
-     * be associated with that event. Keys and associated values are visible in the session view on the Firebase Crashlytics
-     * console. A maximum of 64 key/value pairs can be written, and new keys added beyond that limit will be ignored. Keys or
-     * values that exceed 1024 characters will be truncated.
-     *
-     * @param key A unique key
-     *
-     *@param value A value to be associated with the given key
-     */
-    public fun setCustomKey(key: String, value: Double)
+    public fun setCustomKey(
+        key: String,
+        value: Double,
+    )
 
     /**
      * Records a non-fatal report to send to Crashlytics.

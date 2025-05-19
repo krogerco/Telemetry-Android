@@ -37,9 +37,10 @@ import org.junit.jupiter.api.Test
 
 internal class TelemeterLogExtensionsTest {
     private val captured = mutableListOf<Event>()
-    private val fakeRelay = FakeRelay {
-        captured.add(it)
-    }
+    private val fakeRelay =
+        FakeRelay {
+            captured.add(it)
+        }
 
     private val message = "hello there"
 
@@ -48,100 +49,112 @@ internal class TelemeterLogExtensionsTest {
         captured.clear()
     }
 
-    private fun TestScope.createTelemeter() = Telemeter.build(
-        relays = listOf(fakeRelay),
-        flowConfig = Telemeter.defaultTelemetryFlowConfig.copy(scope = backgroundScope),
-    )
+    private fun TestScope.createTelemeter() =
+        Telemeter.build(
+            relays = listOf(fakeRelay),
+            flowConfig = Telemeter.defaultTelemetryFlowConfig.copy(scope = backgroundScope),
+        )
 
     @Test
-    fun `log records significance passed to it`() = runTest {
-        val telemeter = createTelemeter()
-        telemeter.log(message = message, significance = Significance.ERROR)
-        testScheduler.runCurrent()
-        assertTrue(captured[0].facets[0] == Significance.ERROR)
-    }
+    fun `log records significance passed to it`() =
+        runTest {
+            val telemeter = createTelemeter()
+            telemeter.log(message = message, significance = Significance.ERROR)
+            testScheduler.runCurrent()
+            assertTrue(captured[0].facets[0] == Significance.ERROR)
+        }
 
     @Test
-    fun `tag is ignored if null`() = runTest {
-        val telemeter = createTelemeter()
-        telemeter.log(message = message, significance = Significance.ERROR)
-        testScheduler.runCurrent()
-        assertTrue(captured[0].description == message)
-    }
+    fun `tag is ignored if null`() =
+        runTest {
+            val telemeter = createTelemeter()
+            telemeter.log(message = message, significance = Significance.ERROR)
+            testScheduler.runCurrent()
+            assertTrue(captured[0].description == message)
+        }
 
     @Test
-    fun `tag is prepended if present`() = runTest {
-        val telemeter = createTelemeter()
-        val tag = Telemeter.TAG
-        telemeter.log(tag = tag, message = message, significance = Significance.ERROR)
-        testScheduler.runCurrent()
-        val expected = "$tag - $message"
-        assertEquals(expected, captured[0].description)
-    }
+    fun `tag is prepended if present`() =
+        runTest {
+            val telemeter = createTelemeter()
+            val tag = Telemeter.TAG
+            telemeter.log(tag = tag, message = message, significance = Significance.ERROR)
+            testScheduler.runCurrent()
+            val expected = "$tag - $message"
+            assertEquals(expected, captured[0].description)
+        }
 
     @Test
-    fun `v records verbose significant event`() = runTest {
-        val telemeter = createTelemeter()
-        telemeter.v(message = message)
-        testScheduler.runCurrent()
-        assertTrue(captured[0].facets[0] == Significance.VERBOSE)
-    }
+    fun `v records verbose significant event`() =
+        runTest {
+            val telemeter = createTelemeter()
+            telemeter.v(message = message)
+            testScheduler.runCurrent()
+            assertTrue(captured[0].facets[0] == Significance.VERBOSE)
+        }
 
     @Test
-    fun `d records debug significant event`() = runTest {
-        val telemeter = createTelemeter()
-        telemeter.d(message = message)
-        testScheduler.runCurrent()
-        assertTrue(captured[0].facets[0] == Significance.DEBUG)
-    }
+    fun `d records debug significant event`() =
+        runTest {
+            val telemeter = createTelemeter()
+            telemeter.d(message = message)
+            testScheduler.runCurrent()
+            assertTrue(captured[0].facets[0] == Significance.DEBUG)
+        }
 
     @Test
-    fun `i records informational significant event`() = runTest {
-        val telemeter = createTelemeter()
-        telemeter.i(message = message)
-        testScheduler.runCurrent()
-        assertTrue(captured[0].facets[0] == Significance.INFORMATIONAL)
-    }
+    fun `i records informational significant event`() =
+        runTest {
+            val telemeter = createTelemeter()
+            telemeter.i(message = message)
+            testScheduler.runCurrent()
+            assertTrue(captured[0].facets[0] == Significance.INFORMATIONAL)
+        }
 
     @Test
-    fun `w records warn significant event`() = runTest {
-        val telemeter = createTelemeter()
-        telemeter.w(message = message)
-        testScheduler.runCurrent()
-        assertTrue(captured[0].facets[0] == Significance.WARNING)
-    }
+    fun `w records warn significant event`() =
+        runTest {
+            val telemeter = createTelemeter()
+            telemeter.w(message = message)
+            testScheduler.runCurrent()
+            assertTrue(captured[0].facets[0] == Significance.WARNING)
+        }
 
     @Test
-    fun `e records exceptional significant event`() = runTest {
-        val telemeter = createTelemeter()
-        telemeter.e(message = message)
-        testScheduler.runCurrent()
-        assertTrue(captured[0].facets[0] == Significance.ERROR)
-    }
+    fun `e records exceptional significant event`() =
+        runTest {
+            val telemeter = createTelemeter()
+            telemeter.e(message = message)
+            testScheduler.runCurrent()
+            assertTrue(captured[0].facets[0] == Significance.ERROR)
+        }
 
     @Test
-    fun `wtf records internal_error significant event`() = runTest {
-        val telemeter = createTelemeter()
-        telemeter.wtf(message = message)
-        testScheduler.runCurrent()
-        assertTrue(captured[0].facets[0] == Significance.INTERNAL_ERROR)
-    }
+    fun `wtf records internal_error significant event`() =
+        runTest {
+            val telemeter = createTelemeter()
+            telemeter.wtf(message = message)
+            testScheduler.runCurrent()
+            assertTrue(captured[0].facets[0] == Significance.INTERNAL_ERROR)
+        }
 
     @Test
-    fun `throwable is not used if not specified`() = runTest {
-        val telemeter = createTelemeter()
-        telemeter.wtf(message = message)
-        testScheduler.runCurrent()
-        assertEquals(message, captured[0].description)
-    }
+    fun `throwable is not used if not specified`() =
+        runTest {
+            val telemeter = createTelemeter()
+            telemeter.wtf(message = message)
+            testScheduler.runCurrent()
+            assertEquals(message, captured[0].description)
+        }
 
     @Test
-    fun `throwable is used if specified`() = runTest {
-        val telemeter = createTelemeter()
-        val exceptionMessage = "oh no"
-        telemeter.wtf(message = message, throwable = IllegalStateException(exceptionMessage))
-        testScheduler.runCurrent()
-        val expectedMessage = "$message - $exceptionMessage"
-        assertEquals(expectedMessage, captured[0].description)
-    }
+    fun `throwable is used if specified`() =
+        runTest {
+            val telemeter = createTelemeter()
+            val exceptionMessage = "oh no"
+            telemeter.wtf(message = message, throwable = IllegalStateException(exceptionMessage))
+            testScheduler.runCurrent()
+            val expectedMessage = "$message - $exceptionMessage"
+            assertEquals(expectedMessage, captured[0].description)
+        }
 }

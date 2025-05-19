@@ -1,3 +1,5 @@
+@file:Suppress("ktlint:standard:max-line-length")
+
 package com.kroger.telemetry.firebase
 
 import androidx.core.os.bundleOf
@@ -9,7 +11,6 @@ import org.junit.runner.RunWith
 
 @RunWith(AndroidJUnit4::class)
 internal class FirebaseAnalyticsRelayTest {
-
     @Test
     fun given_event_with_firebase_facet_with_data_WHEN_recorded_THEN_data_matches_in_logged_event() =
         runBlocking {
@@ -19,11 +20,12 @@ internal class FirebaseAnalyticsRelayTest {
             val val1 = "val1"
             val val2 = 2
 
-            val facetWithData = object : DeveloperMetricsFacet {
-                override val eventName: String = fakeName
-                override val compute: () -> Map<String, Any?> =
-                    { mapOf<String, Any?>(key1 to val1, key2 to val2) }
-            }
+            val facetWithData =
+                object : DeveloperMetricsFacet {
+                    override val eventName: String = fakeName
+                    override val compute: () -> Map<String, Any?> =
+                        { mapOf<String, Any?>(key1 to val1, key2 to val2) }
+                }
 
             val bundleToCompare = bundleOf(key1 to val1, key2 to val2)
 

@@ -60,6 +60,7 @@ public interface Relay {
  */
 public interface TypedRelay<T : Facet> : Relay {
     public val type: Class<T>
+
     override suspend fun process(event: Event) {
         event.facets.filterIsInstance(type).forEach { facet ->
             processFacet(facet)

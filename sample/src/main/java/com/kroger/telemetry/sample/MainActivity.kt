@@ -46,7 +46,6 @@ import javax.inject.Inject
 
 @AndroidEntryPoint
 class MainActivity : AppCompatActivity() {
-
     private val binding by lazy {
         ActivityMainBinding.inflate(layoutInflater)
     }
@@ -86,24 +85,28 @@ class MainActivity : AppCompatActivity() {
 }
 
 sealed class ActivityEvent : Event {
-    protected val activityFacets = listOf(
-        BarFacet("some bar:data from the activity"),
-    )
+    protected val activityFacets =
+        listOf(
+            BarFacet("some bar:data from the activity"),
+        )
 
     object Created : ActivityEvent() {
         override val description = "Activity Created"
         override val facets = activityFacets
     }
 
-    class ButtonClicked(buttonTag: String) : ActivityEvent() {
+    class ButtonClicked(
+        buttonTag: String,
+    ) : ActivityEvent() {
         override val description: String = "$buttonTag clicked"
         override val facets: List<Facet> =
-            activityFacets + listOf(
-                StringResourceFormattedToastFacet(
-                    R.string.button_click_message,
-                    buttonTag,
-                ),
-            )
+            activityFacets +
+                listOf(
+                    StringResourceFormattedToastFacet(
+                        R.string.button_click_message,
+                        buttonTag,
+                    ),
+                )
     }
 }
 
@@ -120,11 +123,13 @@ class ActivityRelay : Relay {
 class ModuleOneTelemeter(
     telemeter: Telemeter,
     contextAwareFacetResolver: ContextAwareFacetResolver,
-) :
-    Telemeter by telemeter.child(
+) : Telemeter by telemeter.child(
         relays = listOf(ActivityRelay()),
         facets = listOf(MainActivity.prefix),
-        facetResolvers = mapOf(StringResourceFormattedToastFacet::class.java to contextAwareFacetResolver),
+        facetResolvers =
+            mapOf(
+                StringResourceFormattedToastFacet::class.java to contextAwareFacetResolver,
+            ),
     )
 
 @InstallIn(ActivityComponent::class)
@@ -134,6 +139,5 @@ object ModuleOneModule {
     fun provideModuleOneTelemeter(
         appTelemeter: AppTelemeter,
         contextAwareFacetResolver: ContextAwareFacetResolver,
-    ): ModuleOneTelemeter =
-        ModuleOneTelemeter(appTelemeter, contextAwareFacetResolver)
+    ): ModuleOneTelemeter = ModuleOneTelemeter(appTelemeter, contextAwareFacetResolver)
 }

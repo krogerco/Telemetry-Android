@@ -37,13 +37,23 @@ import com.kroger.telemetry.child
 public sealed class Prefix : Facet {
     public abstract val value: String
 
-    public data class App(override val value: String) : Prefix()
+    public data class App(
+        override val value: String,
+    ) : Prefix()
 
-    public data class Module(override val value: String) : Prefix()
+    public data class Module(
+        override val value: String,
+    ) : Prefix()
 
-    public data class Screen(override val value: String) : Prefix()
+    public data class Screen(
+        override val value: String,
+    ) : Prefix()
 
-    public data class Class(override val value: String) : Prefix()
+    public data class Class(
+        override val value: String,
+    ) : Prefix()
 
-    public data class LocalScope(override val value: String) : Prefix()
+    public data class LocalScope(
+        override val value: String,
+    ) : Prefix()
 }

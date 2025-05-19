@@ -32,7 +32,6 @@ import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 
 public class ContextAwareFacetResolverTest {
-
     private val context: Context = mockk()
     private lateinit var contextAwareFacetResolver: ContextAwareFacetResolver
 
@@ -53,11 +52,10 @@ public class ContextAwareFacetResolverTest {
     @Test
     public fun `Given an ContextAwareFacetResolver, When resolve is called on a ContextAwareFacet, Then return the resolved Facet`() {
         val testFacet = object : Facet {}
-        val testUnresolvedFacet = object : ContextAwareFacet {
-            override fun resolve(context: Context): Facet {
-                return testFacet
+        val testUnresolvedFacet =
+            object : ContextAwareFacet {
+                override fun resolve(context: Context): Facet = testFacet
             }
-        }
 
         val sut = contextAwareFacetResolver.resolve(testUnresolvedFacet)
 

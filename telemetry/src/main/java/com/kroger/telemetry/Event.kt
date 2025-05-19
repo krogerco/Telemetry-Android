@@ -36,6 +36,8 @@ import com.kroger.telemetry.facet.Facet
  * @property facets A list of data and metadata pertinent to the event.
  */
 public interface Event {
-    public val description: String get() = "${this::class.java.simpleName}\n${facets.joinToString("\n")}"
+    public val description: String get() = "${this::class.java.simpleName}\n${facets.joinToString(
+        "\n",
+    )}"
     public val facets: List<Facet>
 }
