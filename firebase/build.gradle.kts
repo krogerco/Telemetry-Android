@@ -1,31 +1,37 @@
+import com.kroger.gradle.config.junit5
+
 plugins {
-    id(Plugins.androidLibrary.id)
-    id(Plugins.release.id)
+    alias(libs.plugins.conventions.publishedAndroidLibrary)
 }
 
 android {
-    defaultConfig {
-        testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
+    namespace = "com.kroger.telemetry.firebase"
+}
+
+kover {
+    currentProject {
+        createVariant("default") {
+            add("debug")
+        }
     }
 }
 
 dependencies {
     implementation(project(":telemetry"))
 
-    implementation(libs.androidCoreKtx)
-    implementation(libs.coroutines)
-    implementation(libs.firebaseAnalytics)
+    implementation(libs.androidx.coreKtx)
+    implementation(libs.kotlinx.coroutinesCore)
+    implementation(platform(libs.firebase.bom))
+    implementation(libs.firebase.analytics)
     implementation(libs.injectJavax)
-    implementation(libs.stdLib)
 
+    junit5()
     testImplementation(libs.mockk)
-    testImplementation(libs.coroutinesTest)
-    testImplementation(libs.jupiterApi)
-    testRuntimeOnly(libs.jupiterEngine)
+    testImplementation(libs.kotlinx.coroutinesTest)
 
-    androidTestImplementation(libs.androidxTestCore)
-    androidTestImplementation(libs.androidxTestRules)
-    androidTestImplementation(libs.androidxTestRunner)
-    androidTestImplementation(libs.junit)
-    androidTestImplementation(libs.junitTestKtx)
+    androidTestImplementation(libs.junit4)
+    androidTestImplementation(libs.androidx.test.core)
+    androidTestImplementation(libs.androidx.test.ext.junitKtx)
+    androidTestImplementation(libs.androidx.test.rules)
+    androidTestImplementation(libs.androidx.test.runner)
 }

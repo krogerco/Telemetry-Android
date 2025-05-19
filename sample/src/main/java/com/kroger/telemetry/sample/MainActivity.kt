@@ -26,6 +26,7 @@ package com.kroger.telemetry.sample
 
 import android.os.Bundle
 import android.util.Log
+import androidx.activity.enableEdgeToEdge
 import androidx.appcompat.app.AppCompatActivity
 import com.kroger.telemetry.Event
 import com.kroger.telemetry.Relay
@@ -54,6 +55,7 @@ class MainActivity : AppCompatActivity() {
     lateinit var telemeter: ModuleOneTelemeter
 
     override fun onCreate(savedInstanceState: Bundle?) {
+        enableEdgeToEdge()
         super.onCreate(savedInstanceState)
         setContentView(binding.root)
 
