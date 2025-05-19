@@ -10,6 +10,10 @@ jobs:
     name: Check PR Title
     runs-on: ubuntu-latest
     steps:
-      - uses: thehanimo/pr-title-checker@v1.3.4
+      - uses: thehanimo/pr-title-checker@v1.4.0
         with:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          github_configuration_owner: 'krogerco'
+          github_configuration_repo: 'Shared-CI-Workflow-Android'
+          github_configuration_path: '.github/config/pr-title-checker-config.json'
+          github_configuration_ref: 'v1.0.0'
