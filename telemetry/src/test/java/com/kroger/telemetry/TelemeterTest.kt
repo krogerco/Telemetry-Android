@@ -28,6 +28,7 @@ import com.kroger.telemetry.facet.Facet
 import com.kroger.telemetry.facet.FacetResolver
 import com.kroger.telemetry.facet.Failure
 import com.kroger.telemetry.facet.Prefix
+import com.kroger.telemetry.facet.RelayFailure
 import com.kroger.telemetry.facet.ThreadData
 import com.kroger.telemetry.facet.UnresolvedFacet
 import com.kroger.telemetry.util.FakeEvent
@@ -39,6 +40,9 @@ import kotlinx.coroutines.test.UnconfinedTestDispatcher
 import kotlinx.coroutines.test.runTest
 import kotlinx.coroutines.withContext
 import org.junit.jupiter.api.Assertions.assertEquals
+import org.junit.jupiter.api.Assertions.assertFalse
+import org.junit.jupiter.api.Assertions.assertNotNull
+import org.junit.jupiter.api.Assertions.assertSame
 import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.Test
 import kotlin.time.Duration.Companion.milliseconds
@@ -488,16 +492,9 @@ internal class TelemeterTest {
     fun `GIVEN telemeter with relay WHEN relay throws THEN telemeter catches and records error without looping`() =
         runTest {
             val recorded = mutableListOf<Event>()
-            val goodRelay =
-                FakeRelay {
-                    recorded.add(it)
-                }
+            val goodRelay = FakeRelay { recorded.add(it) }
             val exception = NullPointerException()
-            val badRelay =
-                FakeRelay {
-                    // This would loop if the implementation didn't prevent it
-                    throw exception
-                }
+            val badRelay = FakeRelay { throw exception }
 
             val telemeter =
                 Telemeter.build(
@@ -507,9 +504,260 @@ internal class TelemeterTest {
 
             telemeter.record(FakeEvent())
             testScheduler.runCurrent()
-            val failureEvents = recorded.filter { it.facets.any { facet -> facet is Failure } }
-            val failureFacet = failureEvents[0].facets[0] as Failure
-            assertEquals(exception, failureFacet.throwable)
+
+            // Should have 2 events: original + failure
+            assertEquals(2, recorded.size)
+
+            // Failure event should have both facets
+            val failureEvent = recorded[1]
+            assertTrue(failureEvent.facets.any { it is Failure })
+            assertTrue(failureEvent.facets.any { it is RelayFailure })
+
+            // RelayFailure should reference the bad relay
+            val relayFailure = failureEvent.facets.filterIsInstance<RelayFailure>().first()
+            assertSame(badRelay, relayFailure.sourceRelay)
+            assertEquals(exception, relayFailure.throwable)
+        }
+
+    @Test
+    fun `GIVEN relay that fails on Failure facets WHEN it processes its own failure THEN loop is prevented`() =
+        runTest {
+            val recorded = mutableListOf<Event>()
+            val recordingRelay = FakeRelay { recorded.add(it) }
+
+            val brokenRelay =
+                FakeRelay { event ->
+                    // Throw when processing Failure facets
+                    if (event.facets.any { it is Failure }) {
+                        throw RuntimeException("Failed to process failure event")
+                    }
+                }
+
+            val telemeter =
+                Telemeter.build(
+                    relays = listOf(brokenRelay, recordingRelay),
+                    flowConfig = Telemeter.defaultTelemetryFlowConfig.copy(scope = backgroundScope),
+                )
+
+            telemeter.record(FakeEvent(facets = listOf(Failure("A failure for testing"))))
+            testScheduler.runCurrent()
+
+            // Should have 2 events: original + one failure (loop prevented)
+            // Without loop prevention, there would be 3+ events (original + failure + failure of failure + ...)
+            assertEquals(2, recorded.size)
+
+            // First is original event
+            assertTrue(recorded[0].facets.any { it is Failure })
+
+            // Second is failure event with RelayFailure pointing to broken relay
+            val failureEvent = recorded[1]
+            assertTrue(failureEvent.facets.any { it is Failure })
+
+            val relayFailure = failureEvent.facets.filterIsInstance<RelayFailure>().first()
+            assertSame(brokenRelay, relayFailure.sourceRelay)
+        }
+
+    @Test
+    fun `GIVEN multiple relays WHEN one fails THEN other relays can process the RelayFailure event`() =
+        runTest {
+            val recorded = mutableListOf<Event>()
+            val relayA = FakeRelay { throw RuntimeException("Relay A failed") }
+            val relayB = FakeRelay { recorded.add(it) }
+
+            val telemeter =
+                Telemeter.build(
+                    relays = listOf(relayA, relayB),
+                    flowConfig = Telemeter.defaultTelemetryFlowConfig.copy(scope = backgroundScope),
+                )
+
+            telemeter.record(FakeEvent())
+            testScheduler.runCurrent()
+
+            // RelayB should see both events: original + failure event from RelayA
+            assertEquals(2, recorded.size)
+
+            // The failure event should have RelayFailure from relayA
+            val failureEvent = recorded[1]
+            val relayFailure = failureEvent.facets.filterIsInstance<RelayFailure>().first()
+            assertSame(relayA, relayFailure.sourceRelay)
+
+            // RelayB was able to process it (not skipped) because it's not the source
+        }
+
+    @Test
+    fun `GIVEN relay failure WHEN failure event created THEN includes both RelayFailure and Failure facets`() =
+        runTest {
+            val recorded = mutableListOf<Event>()
+            val recordingRelay = FakeRelay { recorded.add(it) }
+            val exception = IllegalStateException("Test error")
+            val failingRelay = FakeRelay { throw exception }
+
+            val telemeter =
+                Telemeter.build(
+                    relays = listOf(failingRelay, recordingRelay),
+                    flowConfig = Telemeter.defaultTelemetryFlowConfig.copy(scope = backgroundScope),
+                )
+
+            telemeter.record(FakeEvent())
+            testScheduler.runCurrent()
+
+            val failureEvent = recorded[1]
+
+            // Should have both facet types for backward compatibility
+            val relayFailure = failureEvent.facets.filterIsInstance<RelayFailure>().firstOrNull()
+            val failure = failureEvent.facets.filterIsInstance<Failure>().firstOrNull()
+
+            assertNotNull(relayFailure)
+            assertNotNull(failure)
+
+            // Both should have the same message and throwable
+            assertEquals(relayFailure?.throwable, failure?.throwable)
+            assertEquals(exception, failure?.throwable)
+        }
+
+    @Test
+    fun `GIVEN multiple relays that fail on RelayFailures WHEN they process each other's failures THEN progressive disqualification prevents infinite loop`() =
+        runTest {
+            val recorded = mutableListOf<Event>()
+            val recordingRelay = FakeRelay { recorded.add(it) }
+
+            var relayAProcessCount = 0
+            var relayBProcessCount = 0
+
+            // RelayA fails on first event, then fails on ANY RelayFailure
+            val relayA =
+                FakeRelay { event ->
+                    relayAProcessCount++
+                    if (relayAProcessCount == 1 || event.facets.any { it is RelayFailure }) {
+                        throw RuntimeException("RelayA failed")
+                    }
+                }
+
+            // RelayB fails when processing ANY RelayFailure
+            val relayB =
+                FakeRelay { event ->
+                    relayBProcessCount++
+                    if (event.facets.any { it is RelayFailure }) {
+                        throw RuntimeException("RelayB failed on RelayFailure")
+                    }
+                }
+
+            val telemeter =
+                Telemeter.build(
+                    relays = listOf(relayA, relayB, recordingRelay),
+                    flowConfig = Telemeter.defaultTelemetryFlowConfig.copy(scope = backgroundScope),
+                )
+
+            // Start with a normal event
+            telemeter.record(FakeEvent())
+            testScheduler.runCurrent()
+
+            // Without progressive disqualification, this would create an infinite loop:
+            // 1. Normal event → relayA fails → RelayFailure(A, cause=null)
+            // 2. RelayFailure(A) → relayB fails → RelayFailure(B, cause=A)
+            // 3. RelayFailure(B) → relayA fails → RelayFailure(A, cause=B)
+            // 4. RelayFailure(A) → relayB fails → RelayFailure(B, cause=A) → LOOP!
+
+            // With progressive disqualification, we should have exactly 3 events:
+            // 1. Original event
+            // 2. RelayFailure from relayA (cause=null)
+            // 3. RelayFailure from relayB (cause=relayA's failure) - then relayA is disqualified
+            assertEquals(3, recorded.size)
+
+            // First event is the original
+            assertFalse(recorded[0].facets.any { it is RelayFailure })
+
+            // Second event is relayA's failure with no cause
+            val relayAFailure = recorded[1].facets.filterIsInstance<RelayFailure>().first()
+            assertSame(relayA, relayAFailure.sourceRelay)
+            assertEquals(null, relayAFailure.cause)
+
+            // Third event is relayB's failure with relayA as the cause
+            val relayBFailure = recorded[2].facets.filterIsInstance<RelayFailure>().first()
+            assertSame(relayB, relayBFailure.sourceRelay)
+            assertSame(relayAFailure, relayBFailure.cause)
+
+            // No fourth event should exist (relayA is disqualified from processing relayB's failure)
+        }
+
+    @Test
+    fun `GIVEN relay failure with cause chain WHEN relay appears in chain THEN relay is disqualified from processing`() =
+        runTest {
+            val recorded = mutableListOf<Event>()
+            val recordingRelay = FakeRelay { recorded.add(it) }
+
+            val relayA = FakeRelay { }
+            val relayB = FakeRelay { }
+
+            val telemeter =
+                Telemeter.build(
+                    relays = listOf(relayA, relayB, recordingRelay),
+                    flowConfig = Telemeter.defaultTelemetryFlowConfig.copy(scope = backgroundScope),
+                )
+
+            // Create a cause chain manually: relayC → relayB → relayA
+            val relayAFailure =
+                RelayFailure(
+                    sourceRelay = relayA,
+                    message = "RelayA failed",
+                    throwable = RuntimeException("A"),
+                    cause = null,
+                )
+
+            val relayBFailure =
+                RelayFailure(
+                    sourceRelay = relayB,
+                    message = "RelayB failed",
+                    throwable = RuntimeException("B"),
+                    cause = relayAFailure,
+                )
+
+            // Record an event with relayB's failure (which has relayA in its cause chain)
+            telemeter.record(
+                FakeEvent(
+                    facets = listOf(relayBFailure, Failure("test")),
+                ),
+            )
+            testScheduler.runCurrent()
+
+            // recordingRelay should see the event (it's not in the chain)
+            assertEquals(1, recorded.size)
+
+            // But if we check which relays would be disqualified:
+            // - relayA should be disqualified (appears in cause chain)
+            // - relayB should be disqualified (is the source)
+            // Only recordingRelay processes it
+
+            val processedEvent = recorded[0]
+            val relayFailure = processedEvent.facets.filterIsInstance<RelayFailure>().first()
+
+            // Verify the cause chain is intact
+            assertSame(relayB, relayFailure.sourceRelay)
+            assertSame(relayAFailure, relayFailure.cause)
+        }
+
+    @Test
+    fun `GIVEN relay failure without cause WHEN failure recorded THEN cause is null`() =
+        runTest {
+            val recorded = mutableListOf<Event>()
+            val recordingRelay = FakeRelay { recorded.add(it) }
+            val failingRelay = FakeRelay { throw RuntimeException("Failed") }
+
+            val telemeter =
+                Telemeter.build(
+                    relays = listOf(failingRelay, recordingRelay),
+                    flowConfig = Telemeter.defaultTelemetryFlowConfig.copy(scope = backgroundScope),
+                )
+
+            // Record a normal event (no RelayFailure in it)
+            telemeter.record(FakeEvent())
+            testScheduler.runCurrent()
+
+            val failureEvent = recorded[1]
+            val relayFailure = failureEvent.facets.filterIsInstance<RelayFailure>().first()
+
+            // Since the original event had no RelayFailure, the cause should be null
+            assertEquals(null, relayFailure.cause)
         }
 
     @Test
