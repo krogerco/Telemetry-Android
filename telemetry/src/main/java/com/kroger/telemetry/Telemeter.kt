@@ -54,7 +54,10 @@ public interface Telemeter {
      * type of an Event will be overwritten when recorded, so type-checks on Events should be
      * avoided. Instead, type-checks should be used on [Facet]s.
      */
-    public fun record(event: Event, withFacets: List<Facet>? = null)
+    public fun record(
+        event: Event,
+        withFacets: List<Facet>? = null,
+    )
 
     /**
      * Used to configure the event flow that propagates events to relays.
@@ -95,35 +98,36 @@ public interface Telemeter {
             facets: List<Facet> = listOf(),
             facetResolvers: Map<Class<*>, FacetResolver> = mapOf(),
             flowConfig: EventFlowConfig = defaultTelemetryFlowConfig,
-        ): Telemeter {
-            return StandardTelemeter(
+        ): Telemeter =
+            StandardTelemeter(
                 relays = relays,
                 facetResolvers = facetResolvers,
                 facets = facets,
                 parent = null,
                 flowConfig = flowConfig,
             )
-        }
 
         /**
          * Default event flow configuration for Telemetry, to ensure event processing is not
          * blocked by slowest relay.
          */
-        public val defaultTelemetryFlowConfig: EventFlowConfig = EventFlowConfig(
-            replay = 64,
-            extraBufferCapacity = 64,
-            onBufferOverflow = BufferOverflow.DROP_OLDEST,
-        )
+        public val defaultTelemetryFlowConfig: EventFlowConfig =
+            EventFlowConfig(
+                replay = 64,
+                extraBufferCapacity = 64,
+                onBufferOverflow = BufferOverflow.DROP_OLDEST,
+            )
 
         /**
          * Default event flow configuration used by the coroutine standard library, which
          * will suspend new events until the slowest relay has finished processed the last event.
          */
-        public val defaultSharedFlowConfig: EventFlowConfig = EventFlowConfig(
-            replay = 0,
-            extraBufferCapacity = 0,
-            onBufferOverflow = BufferOverflow.SUSPEND,
-        )
+        public val defaultSharedFlowConfig: EventFlowConfig =
+            EventFlowConfig(
+                replay = 0,
+                extraBufferCapacity = 0,
+                onBufferOverflow = BufferOverflow.SUSPEND,
+            )
     }
 }
 
@@ -139,10 +143,11 @@ public fun Telemeter.child(
     relays: List<Relay> = listOf(),
     facets: List<Facet> = listOf(),
     facetResolvers: Map<Class<*>, FacetResolver> = mapOf(),
-): Telemeter = StandardTelemeter(
-    relays = relays,
-    facets = facets,
-    parent = this,
-    flowConfig = (this as? StandardTelemeter)?.flowConfig ?: Telemeter.defaultTelemetryFlowConfig,
-    facetResolvers = facetResolvers,
-)
+): Telemeter =
+    StandardTelemeter(
+        relays = relays,
+        facets = facets,
+        parent = this,
+        flowConfig = (this as? StandardTelemeter)?.flowConfig ?: Telemeter.defaultTelemetryFlowConfig,
+        facetResolvers = facetResolvers,
+    )

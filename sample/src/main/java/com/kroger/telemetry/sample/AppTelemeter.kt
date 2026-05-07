@@ -36,9 +36,10 @@ class AppTelemeter @Inject constructor(
     private val context: Context,
     private val contextAwareFacetResolver: ContextAwareFacetResolver,
 ) : Telemeter by Telemeter.build(
-    relays = listOf(LogRelay(), BarRelay(), FooRelay(), ToastRelay(context)),
-    facetResolvers = mapOf(
-        contextAwareFacetResolver.getType() to contextAwareFacetResolver,
-    ),
-    facets = listOf(Prefix.App("sample")),
-)
+        relays = listOf(LogRelay(), BarRelay(), FooRelay(), ToastRelay(context)),
+        facetResolvers =
+            mapOf(
+                contextAwareFacetResolver.getType() to contextAwareFacetResolver,
+            ),
+        facets = listOf(Prefix.App("sample")),
+    )

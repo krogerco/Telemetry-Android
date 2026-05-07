@@ -1,12 +1,21 @@
+import com.kroger.gradle.config.junit5
+
 plugins {
-    id(Plugins.javaLibrary.id)
-    id(Plugins.release.id)
+    alias(libs.plugins.conventions.publishedKotlinLibrary)
+}
+
+kover {
+    currentProject {
+        createVariant("default") {
+            add("jvm")
+        }
+    }
 }
 
 dependencies {
-    implementation(libs.coroutines)
-    implementation(libs.stdLib)
+    implementation(libs.kotlinx.coroutinesCore)
 
-    testImplementation(libs.coroutinesTest)
+    junit5()
+    testImplementation(libs.kotlinx.coroutinesTest)
     testImplementation(libs.kotlinTest)
 }

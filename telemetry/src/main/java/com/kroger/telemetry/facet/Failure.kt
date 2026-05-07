@@ -28,4 +28,7 @@ package com.kroger.telemetry.facet
  * A facet representing an application failure. This is not limited to crashes, but could be used
  * to represent network errors, for example.
  */
-public data class Failure(val message: String? = null, val throwable: Throwable? = null) : Facet
+public data class Failure(
+    val message: String? = null,
+    val throwable: Throwable? = null,
+) : Facet

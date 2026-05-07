@@ -42,11 +42,12 @@ private val logPrinter: (PrintRelay.Message) -> Unit = { message ->
     Log.println(message.significance.toLogPriority(), message.tag, message.value)
 }
 
-private fun Significance.toLogPriority(): Int = when (this) {
-    Significance.VERBOSE -> Log.VERBOSE
-    Significance.DEBUG -> Log.DEBUG
-    Significance.INFORMATIONAL -> Log.INFO
-    Significance.WARNING -> Log.WARN
-    Significance.ERROR -> Log.ERROR
-    Significance.INTERNAL_ERROR -> Log.ERROR
-}
+private fun Significance.toLogPriority(): Int =
+    when (this) {
+        Significance.VERBOSE -> Log.VERBOSE
+        Significance.DEBUG -> Log.DEBUG
+        Significance.INFORMATIONAL -> Log.INFO
+        Significance.WARNING -> Log.WARN
+        Significance.ERROR -> Log.ERROR
+        Significance.INTERNAL_ERROR -> Log.ERROR
+    }

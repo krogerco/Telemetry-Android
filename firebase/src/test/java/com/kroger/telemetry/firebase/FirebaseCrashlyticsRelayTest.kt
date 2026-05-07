@@ -35,7 +35,6 @@ import kotlinx.coroutines.runBlocking
 import org.junit.jupiter.api.Test
 
 internal class FirebaseCrashlyticsRelayTest {
-
     private val mockCrashlytics = mockk<CrashlyticsWrapper>(relaxed = true)
     private val relay = FirebaseCrashlyticsRelay(mockCrashlytics)
 
@@ -68,14 +67,15 @@ internal class FirebaseCrashlyticsRelayTest {
         runBlocking {
             relay.process(
                 TestEvent(
-                    keys = arrayOf(
-                        CrashlyticsKey.build("STRING", "hello-crashlytics"),
-                        CrashlyticsKey.build("BOOLEAN", true),
-                        CrashlyticsKey.build("INT", 42),
-                        CrashlyticsKey.build("LONG", 42L),
-                        CrashlyticsKey.build("FLOAT", 4.2f),
-                        CrashlyticsKey.build("DOUBLE", 4.2),
-                    ),
+                    keys =
+                        arrayOf(
+                            CrashlyticsKey.build("STRING", "hello-crashlytics"),
+                            CrashlyticsKey.build("BOOLEAN", true),
+                            CrashlyticsKey.build("INT", 42),
+                            CrashlyticsKey.build("LONG", 42L),
+                            CrashlyticsKey.build("FLOAT", 4.2f),
+                            CrashlyticsKey.build("DOUBLE", 4.2),
+                        ),
                 ),
             )
         }
@@ -116,12 +116,13 @@ internal class FirebaseCrashlyticsRelayTest {
         val e1 = RuntimeException("Oh no")
         val key = "some key"
         val value = "some value"
-        val event = TestEvent(
-            message = testMessage,
-            significance = Significance.ERROR,
-            throwable = e1,
-            keys = arrayOf(CrashlyticsKey.build(key, value)),
-        )
+        val event =
+            TestEvent(
+                message = testMessage,
+                significance = Significance.ERROR,
+                throwable = e1,
+                keys = arrayOf(CrashlyticsKey.build(key, value)),
+            )
 
         runBlocking { relay.process(event) }
 
@@ -142,11 +143,11 @@ internal class FirebaseCrashlyticsRelayTest {
             get() = message ?: ""
 
         override val facets: List<Facet>
-            get() = (
-                listOf(significance) +
-                    keys +
-                    throwable?.let { Failure(throwable = it) }
-                )
-                .filterNotNull()
+            get() =
+                (
+                    listOf(significance) +
+                        keys +
+                        throwable?.let { Failure(throwable = it) }
+                ).filterNotNull()
     }
 }

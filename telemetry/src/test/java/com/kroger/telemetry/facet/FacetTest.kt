@@ -32,9 +32,10 @@ internal class FacetTest {
     @Test
     fun `GIVEN computed facet THEN computations will be run multiple times`() {
         var count = 0
-        val facet = object : Facet.Computed<Unit> {
-            override val compute: () -> Unit = { count += 1 }
-        }
+        val facet =
+            object : Facet.Computed<Unit> {
+                override val compute: () -> Unit = { count += 1 }
+            }
 
         for (i in 0..2) facet.compute()
         assertTrue(count > 1)
@@ -43,12 +44,13 @@ internal class FacetTest {
     @Test
     fun `GIVEN lazy facet THEN computations will be be run once`() {
         var count = 0
-        val facet = object : Facet.Lazy<Int>() {
-            override val compute: () -> Int = {
-                count += 1
-                count
+        val facet =
+            object : Facet.Lazy<Int>() {
+                override val compute: () -> Int = {
+                    count += 1
+                    count
+                }
             }
-        }
 
         // read value twice to ensure compute is only run once
         assertEquals(1, facet.value)

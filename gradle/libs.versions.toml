@@ -1,50 +1,83 @@
 [versions]
-androidTest = "1.4.0"
-coroutines = "1.5.0"
-junit4 = "4.13.1"
-junit5 = "5.7.1"
-kotlin = "1.5.31"
-mockk = "1.12.0"
-serialize = "1.2.2"
+androidGradlePlugin = "8.10.0"
+androidJunit5Plugin = "1.12.0.0"
+androidMaterial = "1.12.0"
+androidxAppCompat = "1.7.0"
+androidxConstraintLayout = "2.2.1"
+androidxCore = "1.16.0"
+androidxTestCore = "1.6.1"
+androidxTestEspresso = "3.6.1"
+androidxTestExtJunit = "1.2.1"
+androidxTestRules = "1.6.1"
+androidxTestRunner = "1.6.2"
+conventionPlugin = "2.0.0-alpha.4"
+dependencyAnalysis = "2.17.0"
+firebaseBom = "32.8.0"
+gradleMavenPublishPlugin = "0.31.0"
+gradleVersions = "0.51.0"
+javaxInject = "1"
+kgpCompileSdk = "35"
+kgpDagger = "2.56.1"
+kgpAndroidDesugarJdkLibs = "2.1.5"
+kgpAndroidxComposeBom = "2025.05.00"
+kgpDokka = "2.0.0"
+kgpJdk = "24"
+kgpJvmTarget = "11"
+kgpJunit4 = "4.13.2"
+kgpJunitBom = "5.12.2"
+kgpMinSdk = "24"
+kgpTargetSdk = "35"
+kotlin = "2.1.20"
+kotlinter = "5.0.2"
+kotlinxCoroutines = "1.10.2"
+kover = "0.9.1"
+ksp = "2.1.20-1.0.32"
+mockk = "1.14.2"
 
 [libraries]
 # android
-androidCoreKtx = { module = "androidx.core:core-ktx", version = "1.8.0" }
-annotation = { module = "androidx.annotation:annotation", version = "1.0.0" }
-appCompat = { module = "androidx.appcompat:appcompat", version = "1.4.1" }
-contraintLayount = { module = "androidx.constraintlayout:constraintlayout", version = "2.1.3" }
-googleMaterial = { module = "com.google.android.material:material", version = "1.5.0" }
-
-# dagger (sample app only)
-hilt = { module = "com.google.dagger:hilt-android", version = "2.41" }
-hiltAndroidCompiler = { module = "com.google.dagger:hilt-android-compiler", version = "2.41" }
-hiltCompiler = { module = "androidx.hilt:hilt-compiler", version = "1.0.0" }
+android-material = { module = "com.google.android.material:material", version.ref = "androidMaterial" }
+androidx-constrainlayout = { module = "androidx.constraintlayout:constraintlayout", version.ref = "androidxConstraintLayout" }
+androidx-coreKtx = { module = "androidx.core:core-ktx", version.ref = "androidxCore" }
+androidx-appcompat = { module = "androidx.appcompat:appcompat", version.ref = "androidxAppCompat" }
 
 # firebase
-firebaseAnalytics = { module = "com.google.firebase:firebase-analytics", version = "19.0.0" }
+firebase-analytics = { module = "com.google.firebase:firebase-analytics" }
+firebase-bom = { module = "com.google.firebase:firebase-bom", version.ref = "firebaseBom" }
 
 # kotlin
-coroutines = { module = "org.jetbrains.kotlinx:kotlinx-coroutines-core", version.ref = "coroutines" }
-coroutinesAndroid = { module = "org.jetbrains.kotlinx:kotlinx-coroutines-android", version.ref = "coroutines" }
-coroutinesTest = { module = "org.jetbrains.kotlinx:kotlinx-coroutines-test", version.ref = "coroutines" }
+kotlinx-coroutinesCore = { module = "org.jetbrains.kotlinx:kotlinx-coroutines-core", version.ref = "kotlinxCoroutines" }
+kotlinx-coroutinesAndroid = { module = "org.jetbrains.kotlinx:kotlinx-coroutines-android", version.ref = "kotlinxCoroutines" }
+kotlinx-coroutinesTest = { module = "org.jetbrains.kotlinx:kotlinx-coroutines-test", version.ref = "kotlinxCoroutines" }
 kotlinTest = { module = "org.jetbrains.kotlin:kotlin-test", version.ref = "kotlin" }
-serialization = { module = "org.jetbrains.kotlinx:kotlinx-serialization-json", version.ref = "serialize" }
-stdLib = { module = "org.jetbrains.kotlin:kotlin-stdlib-jdk7", version.ref = "kotlin" }
 
 # other
-injectJavax = { module = "javax.inject:javax.inject", version = "1" }
+injectJavax = { module = "javax.inject:javax.inject", version.ref = "javaxInject" }
 
 ## unit tests
-jupiterApi = { module = "org.junit.jupiter:junit-jupiter-api", version.ref = "junit5" }
-jupiterEngine = { module = "org.junit.jupiter:junit-jupiter-engine", version.ref = "junit5" }
-androidJunitTestExt = { module = "androidx.test.ext:junit", version = "1.1.3" }
+android-test-espressoCore = { module = "androidx.test.espresso:espresso-core", version.ref = "androidxTestEspresso" }
+junit4 = { module = "junit:junit", version.ref = "kgpJunit4" }
 mockk = { module = "io.mockk:mockk", version.ref = "mockk" }
-textEspresso = { module = "androidx.test.espresso:espresso-core", version = "3.4.0" }
-truth = { module = "com.google.truth:truth", version = "1.1" }
 
 # instrumented tests
-androidxTestCore = { module = "androidx.test:core", version = "1.4.1-alpha07" }
-androidxTestRules = { module = "androidx.test:rules", version.ref = "androidTest" }
-androidxTestRunner = { module = "androidx.test:runner", version.ref = "androidTest" }
-junit = { module = "junit:junit", version.ref = "junit4" }
-junitTestKtx = { module = "androidx.test.ext:junit-ktx", version = "1.1.2" }
+androidx-test-core = { module = "androidx.test:core", version.ref = "androidxTestCore" }
+androidx-test-rules = { module = "androidx.test:rules", version.ref = "androidxTestRules" }
+androidx-test-runner = { module = "androidx.test:runner", version.ref = "androidxTestRunner" }
+androidx-test-ext-junitKtx = { module = "androidx.test.ext:junit-ktx", version.ref = "androidxTestExtJunit" }
+
+[plugins]
+android-application = { id = "com.android.application", version.ref = "androidGradlePlugin" }
+android-junit5 = { id = "de.mannodermaus.android-junit5", version.ref = "androidJunit5Plugin" }
+compose = { id = "org.jetbrains.kotlin.plugin.compose", version.ref = "kotlin" }
+conventions-androidApplication = { id = "com.kroger.gradle.android-application-conventions", version.ref = "conventionPlugin" }
+conventions-publishedAndroidLibrary = { id = "com.kroger.gradle.published-android-library-conventions", version.ref = "conventionPlugin" }
+conventions-publishedKotlinLibrary = { id = "com.kroger.gradle.published-kotlin-library-conventions", version.ref = "conventionPlugin" }
+conventions-root = { id = "com.kroger.gradle.root", version.ref = "conventionPlugin" }
+dagger-hilt = { id = "com.google.dagger.hilt.android", version.ref = "kgpDagger" }
+dependencyAnalysis = { id = "com.autonomousapps.dependency-analysis", version.ref = "dependencyAnalysis" }
+dokka = { id = "org.jetbrains.dokka", version.ref = "kgpDokka" }
+gradleVersions = { id = "com.github.ben-manes.versions", version.ref = "gradleVersions" }
+kotlinter = { id = "org.jmailen.kotlinter", version.ref = "kotlinter" }
+kotlinx-kover = { id = "org.jetbrains.kotlinx.kover", version.ref = "kover" }
+ksp = { id = "com.google.devtools.ksp", version.ref = "ksp" }
+mavenPublish = { id = "com.vanniktech.maven.publish", version.ref = "gradleMavenPublishPlugin" }

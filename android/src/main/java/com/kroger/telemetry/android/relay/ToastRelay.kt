@@ -44,7 +44,6 @@ public class ToastRelay internal constructor(
     private val toaster: Toaster,
     public val configuration: Configuration,
 ) : Relay {
-
     /**
      * A set of configurable options for a ToastRelay.
      * @property toastLength Should be one of [Toast.LENGTH_SHORT] or [Toast.LENGTH_LONG]. Defaults to short.
@@ -83,31 +82,42 @@ public class ToastRelay internal constructor(
 
     override suspend fun process(event: Event) {
         val toastFacets = event.facets.filterIsInstance(ToastFacet::class.java)
-        val shouldToastWithoutToastFacet = event.hasHighEnoughSignificance() &&
-            configuration.toastSignificantEvents
+        val shouldToastWithoutToastFacet =
+            event.hasHighEnoughSignificance() &&
+                configuration.toastSignificantEvents
         val shouldToast = toastFacets.isNotEmpty() || shouldToastWithoutToastFacet
         if (shouldToast && configuration.enabled) {
             val message = toastFacets.firstOrNull()?.message ?: event.description
-            val correctedLength = when (configuration.toastLength) {
-                Toast.LENGTH_SHORT -> configuration.toastLength
-                Toast.LENGTH_LONG -> configuration.toastLength
-                else -> Toast.LENGTH_SHORT
-            }
+            val correctedLength =
+                when (configuration.toastLength) {
+                    Toast.LENGTH_SHORT -> configuration.toastLength
+                    Toast.LENGTH_LONG -> configuration.toastLength
+                    else -> Toast.LENGTH_SHORT
+                }
             toaster.toast(message, correctedLength)
         }
     }
 
-    private fun Event.hasHighEnoughSignificance(): Boolean = facets
-        .filterIsInstance(Significance::class.java)
-        .any { it >= configuration.minimumSignificance }
+    private fun Event.hasHighEnoughSignificance(): Boolean =
+        facets
+            .filterIsInstance(Significance::class.java)
+            .any { it >= configuration.minimumSignificance }
 }
 
 internal interface Toaster {
-    suspend fun toast(message: String, length: Int)
+    suspend fun toast(
+        message: String,
+        length: Int,
+    )
 }
 
-private class ToasterImpl(private val context: Context) : Toaster {
-    override suspend fun toast(message: String, length: Int) = withContext(Dispatchers.Main) {
+private class ToasterImpl(
+    private val context: Context,
+) : Toaster {
+    override suspend fun toast(
+        message: String,
+        length: Int,
+    ) = withContext(Dispatchers.Main) {
         Toast.makeText(context, message, length).show()
     }
 }
@@ -119,8 +129,9 @@ private interface Toggles {
 private fun sampleToastConfig() {
     val propertyChangeConfig = ToastRelay.Configuration.Default(toastSignificantEvents = true)
 
-    class PropertyBehaviorChangeConfig(private val toggles: Toggles) :
-        ToastRelay.Configuration by ToastRelay.Configuration.Default() {
+    class PropertyBehaviorChangeConfig(
+        private val toggles: Toggles,
+    ) : ToastRelay.Configuration by ToastRelay.Configuration.Default() {
         override var enabled: Boolean
             get() = toggles["ToastRelay Toggle"]
             set(_) = Unit

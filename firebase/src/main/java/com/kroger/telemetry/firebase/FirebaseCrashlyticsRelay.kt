@@ -52,8 +52,9 @@ import javax.inject.Inject
  *
  * @sample crashlyticsWrapperImplementation
  */
-public class FirebaseCrashlyticsRelay @Inject constructor(private val crashlytics: CrashlyticsWrapper) : Relay {
-
+public class FirebaseCrashlyticsRelay @Inject constructor(
+    private val crashlytics: CrashlyticsWrapper,
+) : Relay {
     override suspend fun process(event: Event) {
         event.facets.filterIsInstance<CrashlyticsKey>().forEach {
             when (it) {
@@ -102,8 +103,9 @@ public class FirebaseCrashlyticsRelay @Inject constructor(private val crashlytic
  *
  * NOTE: Crashlytics supports up to 64 key/value pairs in a single report. Each key/value pair must be no larger than 1 kB in size.
  */
-public sealed class CrashlyticsKey(public val key: String) : Facet {
-
+public sealed class CrashlyticsKey(
+    public val key: String,
+) : Facet {
     public companion object {
         /**
          * Builds a [CrashlyticsKey] for the key/value pair.
@@ -111,7 +113,10 @@ public sealed class CrashlyticsKey(public val key: String) : Facet {
          * @param key a unique key to identify the value
          * @param value a String value
          */
-        public fun build(key: String, value: String): CrashlyticsKey = StringState(key, value)
+        public fun build(
+            key: String,
+            value: String,
+        ): CrashlyticsKey = StringState(key, value)
 
         /**
          * Builds a [CrashlyticsKey] for the key/value pair.
@@ -119,7 +124,10 @@ public sealed class CrashlyticsKey(public val key: String) : Facet {
          * @param key a unique key to identify the value
          * @param value a Boolean value
          */
-        public fun build(key: String, value: Boolean): CrashlyticsKey = BooleanState(key, value)
+        public fun build(
+            key: String,
+            value: Boolean,
+        ): CrashlyticsKey = BooleanState(key, value)
 
         /**
          * Builds a [CrashlyticsKey] for the key/value pair.
@@ -127,7 +135,10 @@ public sealed class CrashlyticsKey(public val key: String) : Facet {
          * @param key a unique key to identify the value
          * @param value an Int value
          */
-        public fun build(key: String, value: Int): CrashlyticsKey = IntState(key, value)
+        public fun build(
+            key: String,
+            value: Int,
+        ): CrashlyticsKey = IntState(key, value)
 
         /**
          * Builds a [CrashlyticsKey] for the key/value pair.
@@ -135,7 +146,10 @@ public sealed class CrashlyticsKey(public val key: String) : Facet {
          * @param key a unique key to identify the value
          * @param value a Long value
          */
-        public fun build(key: String, value: Long): CrashlyticsKey = LongState(key, value)
+        public fun build(
+            key: String,
+            value: Long,
+        ): CrashlyticsKey = LongState(key, value)
 
         /**
          * Builds a [CrashlyticsKey] for the key/value pair.
@@ -143,7 +157,10 @@ public sealed class CrashlyticsKey(public val key: String) : Facet {
          * @param key a unique key to identify the value
          * @param value a Float value
          */
-        public fun build(key: String, value: Float): CrashlyticsKey = FloatState(key, value)
+        public fun build(
+            key: String,
+            value: Float,
+        ): CrashlyticsKey = FloatState(key, value)
 
         /**
          * Builds a [CrashlyticsKey] for the key/value pair.
@@ -151,7 +168,10 @@ public sealed class CrashlyticsKey(public val key: String) : Facet {
          * @param key a unique key to identify the value
          * @param value a Double value
          */
-        public fun build(key: String, value: Double): CrashlyticsKey = DoubleState(key, value)
+        public fun build(
+            key: String,
+            value: Double,
+        ): CrashlyticsKey = DoubleState(key, value)
     }
 }
 
@@ -159,9 +179,32 @@ public sealed class CrashlyticsKey(public val key: String) : Facet {
 * These classes keep the key/value pairs typesafe, while the CrashlyticsKey build methods keep the public API
 * simple, i.e. CrashlyticsKey.build(key, value).
 */
-private class StringState(key: String, val value: String) : CrashlyticsKey(key)
-private class BooleanState(key: String, val value: Boolean) : CrashlyticsKey(key)
-private class IntState(key: String, val value: Int) : CrashlyticsKey(key)
-private class LongState(key: String, val value: Long) : CrashlyticsKey(key)
-private class FloatState(key: String, val value: Float) : CrashlyticsKey(key)
-private class DoubleState(key: String, val value: Double) : CrashlyticsKey(key)
+private class StringState(
+    key: String,
+    val value: String,
+) : CrashlyticsKey(key)
+
+private class BooleanState(
+    key: String,
+    val value: Boolean,
+) : CrashlyticsKey(key)
+
+private class IntState(
+    key: String,
+    val value: Int,
+) : CrashlyticsKey(key)
+
+private class LongState(
+    key: String,
+    val value: Long,
+) : CrashlyticsKey(key)
+
+private class FloatState(
+    key: String,
+    val value: Float,
+) : CrashlyticsKey(key)
+
+private class DoubleState(
+    key: String,
+    val value: Double,
+) : CrashlyticsKey(key)

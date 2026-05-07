@@ -29,14 +29,16 @@ import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Test
 
 private object ModuleFacetOne : Facet
+
 private object ModuleFacetTwo : Facet
+
 private object ModuleFacetThree : Facet
 
-private const val featureOneEventDesc = "i'm a feature one event"
+private const val FEATURE_ONE_EVENT_DESC = "i'm a feature one event"
 
 private sealed class ModuleEvent : Event {
     sealed class FeatureOneEvent : ModuleEvent() {
-        override val description: String = featureOneEventDesc
+        override val description: String = FEATURE_ONE_EVENT_DESC
         override val facets: List<Facet> = listOf(ModuleFacetOne)
 
         object EventOne : FeatureOneEvent() {
@@ -54,7 +56,7 @@ private sealed class ModuleEvent : Event {
 public class EventTest {
     @Test
     public fun `GIVEN event hierarchy WHEN description defined by super THEN unnecessary in subclasses`() {
-        assertEquals(featureOneEventDesc, ModuleEvent.FeatureOneEvent.EventOne.description)
+        assertEquals(FEATURE_ONE_EVENT_DESC, ModuleEvent.FeatureOneEvent.EventOne.description)
     }
 
     @Test

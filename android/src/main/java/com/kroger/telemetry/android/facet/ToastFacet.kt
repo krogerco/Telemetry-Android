@@ -26,4 +26,6 @@ package com.kroger.telemetry.android.facet
 
 import com.kroger.telemetry.facet.Facet
 
-public data class ToastFacet(val message: String) : Facet
+public data class ToastFacet(
+    val message: String,
+) : Facet

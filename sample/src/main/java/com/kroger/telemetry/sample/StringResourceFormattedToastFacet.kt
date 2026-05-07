@@ -34,7 +34,5 @@ class StringResourceFormattedToastFacet(
     @StringRes private val resId: Int,
     private vararg val formatArgs: String,
 ) : ContextAwareFacet {
-    override fun resolve(context: Context): Facet {
-        return ToastFacet(context.getString(resId, *formatArgs))
-    }
+    override fun resolve(context: Context): Facet = ToastFacet(context.getString(resId, *formatArgs))
 }

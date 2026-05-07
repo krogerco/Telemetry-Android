@@ -27,7 +27,9 @@ package com.kroger.telemetry.util
 import com.kroger.telemetry.Event
 import com.kroger.telemetry.Relay
 
-public class FakeRelay(public var onEvent: suspend (Event) -> Unit = {}) : Relay {
+public class FakeRelay(
+    public var onEvent: suspend (Event) -> Unit = {},
+) : Relay {
     override suspend fun process(event: Event) {
         onEvent(event)
     }

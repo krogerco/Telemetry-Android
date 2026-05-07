@@ -48,7 +48,10 @@ class SampleApplication : Application() {
     }
 }
 
-data class ApplicationStartupEvent(val message: String, val toast: Boolean = false) : Event {
+data class ApplicationStartupEvent(
+    val message: String,
+    val toast: Boolean = false,
+) : Event {
     override val description = message
     override val facets: List<Facet> = if (!toast) listOf() else listOf(ToastFacet(message))
 }
@@ -57,5 +60,7 @@ data class ApplicationStartupEvent(val message: String, val toast: Boolean = fal
 @Module
 object TelemeterModule {
     @Provides
-    fun provideContext(@ApplicationContext context: Context): Context = context
+    fun provideContext(
+        @ApplicationContext context: Context,
+    ): Context = context
 }

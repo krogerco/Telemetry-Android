@@ -32,8 +32,13 @@ import javax.inject.Inject
  * This serves to make the `RealCrashlytics` sample below compile without crashlytics on the classpath
  */
 private interface FirebaseCrashlytics {
-    fun setCustomKey(key: String, value: Any)
+    fun setCustomKey(
+        key: String,
+        value: Any,
+    )
+
     fun recordException(e: Throwable)
+
     fun log(message: String)
 }
 
@@ -42,29 +47,48 @@ internal object Samples {
      * A sample of how one might implement [CrashlyticsWrapper] to forward calls to the real thing
      */
     internal fun crashlyticsWrapperImplementation() {
-        class RealCrashlytics @Inject constructor(private val crashlytics: FirebaseCrashlytics) :
-            CrashlyticsWrapper {
-            override fun setCustomKey(key: String, value: String) {
+        class RealCrashlytics @Inject constructor(
+            private val crashlytics: FirebaseCrashlytics,
+        ) : CrashlyticsWrapper {
+            override fun setCustomKey(
+                key: String,
+                value: String,
+            ) {
                 crashlytics.setCustomKey(key, value)
             }
 
-            override fun setCustomKey(key: String, value: Boolean) {
+            override fun setCustomKey(
+                key: String,
+                value: Boolean,
+            ) {
                 crashlytics.setCustomKey(key, value)
             }
 
-            override fun setCustomKey(key: String, value: Int) {
+            override fun setCustomKey(
+                key: String,
+                value: Int,
+            ) {
                 crashlytics.setCustomKey(key, value)
             }
 
-            override fun setCustomKey(key: String, value: Long) {
+            override fun setCustomKey(
+                key: String,
+                value: Long,
+            ) {
                 crashlytics.setCustomKey(key, value)
             }
 
-            override fun setCustomKey(key: String, value: Float) {
+            override fun setCustomKey(
+                key: String,
+                value: Float,
+            ) {
                 crashlytics.setCustomKey(key, value)
             }
 
-            override fun setCustomKey(key: String, value: Double) {
+            override fun setCustomKey(
+                key: String,
+                value: Double,
+            ) {
                 crashlytics.setCustomKey(key, value)
             }
 

@@ -35,5 +35,5 @@ public enum class Significance : Facet {
     INFORMATIONAL,
     WARNING,
     ERROR,
-    INTERNAL_ERROR
+    INTERNAL_ERROR,
 }

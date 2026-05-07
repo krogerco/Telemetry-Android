@@ -40,7 +40,9 @@ public interface DeveloperMetricsFacet : Facet.Computed<Map<String, Any?>?> {
 }
 
 internal fun sampleDeveloperMetricsFacet() {
-    data class AThingyHappenedDeveloperMetricsFacet(val tag: String) : DeveloperMetricsFacet {
+    data class AThingyHappenedDeveloperMetricsFacet(
+        val tag: String,
+    ) : DeveloperMetricsFacet {
         override val eventName: String = "A thingy happened!"
         override val compute: () -> Map<String, Any?> = {
             mapOf<String, Any?>(

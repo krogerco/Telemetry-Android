@@ -1,15 +1,26 @@
+import com.kroger.gradle.config.junit5
+
 plugins {
-    id(Plugins.androidLibrary.id)
-    id(Plugins.release.id)
+    alias(libs.plugins.conventions.publishedAndroidLibrary)
+}
+
+android {
+    namespace = "com.kroger.telemetry.android"
+}
+
+kover {
+    currentProject {
+        createVariant("default") {
+            add("debug")
+        }
+    }
 }
 
 dependencies {
     api(project(":telemetry"))
 
-    implementation(libs.coroutinesAndroid)
-    implementation(libs.stdLib)
+    implementation(libs.kotlinx.coroutinesAndroid)
 
-    testImplementation(libs.coroutinesTest)
-    testImplementation(libs.jupiterApi)
-    testRuntimeOnly(libs.jupiterEngine)
+    junit5()
+    testImplementation(libs.kotlinx.coroutinesTest)
 }

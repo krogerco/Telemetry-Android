@@ -27,7 +27,7 @@ package com.kroger.telemetry
 import com.kroger.telemetry.facet.Facet
 import com.kroger.telemetry.util.FakeEvent
 import kotlinx.coroutines.ExperimentalCoroutinesApi
-import kotlinx.coroutines.test.runBlockingTest
+import kotlinx.coroutines.test.runTest
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.Test
@@ -36,12 +36,18 @@ import org.junit.jupiter.api.Test
 internal class RelayTest {
     @Test
     fun `GIVEN relay with filter in processing WHEN event processed THEN facets easily extracted`() =
-        runBlockingTest {
-            data class StringFacet(val value: String) : Facet
-            data class IntFacet(val value: Int) : Facet
+        runTest {
+            data class StringFacet(
+                val value: String,
+            ) : Facet
+
+            data class IntFacet(
+                val value: Int,
+            ) : Facet
 
             class BasicRelay : Relay {
                 var processedCount = 0
+
                 override suspend fun process(event: Event) {
                     event.facets.filterIsInstance<StringFacet>().forEach(::process)
                 }
@@ -53,19 +59,25 @@ internal class RelayTest {
             }
 
             val relay = BasicRelay()
-            val event = FakeEvent(
-                description = "test post please ignore",
-                facets = listOf(StringFacet("test facet please confirm"), IntFacet(1)),
-            )
+            val event =
+                FakeEvent(
+                    description = "test post please ignore",
+                    facets = listOf(StringFacet("test facet please confirm"), IntFacet(1)),
+                )
             relay.process(event)
             assertEquals(1, relay.processedCount)
         }
 
     @Test
     fun `GIVEN typed relay WHEN event processed with relevant facet type THEN event is processed`() =
-        runBlockingTest {
-            data class StringFacet(val value: String) : Facet
-            data class IntFacet(val value: Int) : Facet
+        runTest {
+            data class StringFacet(
+                val value: String,
+            ) : Facet
+
+            data class IntFacet(
+                val value: Int,
+            ) : Facet
 
             class BasicRelay : TypedRelay<StringFacet> {
                 var processedCount = 0
@@ -78,19 +90,25 @@ internal class RelayTest {
             }
 
             val relay = BasicRelay()
-            val event = FakeEvent(
-                description = "test post please ignore",
-                facets = listOf(StringFacet("test facet please confirm"), IntFacet(1)),
-            )
+            val event =
+                FakeEvent(
+                    description = "test post please ignore",
+                    facets = listOf(StringFacet("test facet please confirm"), IntFacet(1)),
+                )
             relay.process(event)
             assertEquals(1, relay.processedCount)
         }
 
     @Test
     fun `GIVEN typed relay WHEN event processed without relevant facet type THEN event is not processed`() =
-        runBlockingTest {
-            data class StringFacet(val value: String) : Facet
-            data class IntFacet(val value: Int) : Facet
+        runTest {
+            data class StringFacet(
+                val value: String,
+            ) : Facet
+
+            data class IntFacet(
+                val value: Int,
+            ) : Facet
 
             class BasicRelay : TypedRelay<StringFacet> {
                 var processedCount = 0
@@ -103,25 +121,27 @@ internal class RelayTest {
             }
 
             val relay = BasicRelay()
-            val event = FakeEvent(
-                description = "test post please ignore",
-                facets = listOf(IntFacet(1)),
-            )
+            val event =
+                FakeEvent(
+                    description = "test post please ignore",
+                    facets = listOf(IntFacet(1)),
+                )
             relay.process(event)
             assertEquals(0, relay.processedCount)
         }
 
     @Test
     fun `GIVEN facet to use in typed relay WHEN defining class THEN helper function is useful as delegate`() {
-        data class TestFacet(val passed: Boolean) : Facet
+        data class TestFacet(
+            val passed: Boolean,
+        ) : Facet
 
         var passed = false
 
-        class TestTypedRelay :
-            TypedRelay<TestFacet> by Relay.buildTypedRelay({ facet -> passed = facet.passed })
+        class TestTypedRelay : TypedRelay<TestFacet> by Relay.buildTypedRelay({ facet -> passed = facet.passed })
 
         val passingFacet = TestFacet(passed = true)
-        runBlockingTest {
+        runTest {
             TestTypedRelay().process(FakeEvent(facets = listOf(passingFacet)))
         }
 

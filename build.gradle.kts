@@ -1,48 +1,32 @@
-import com.github.benmanes.gradle.versions.updates.DependencyUpdatesTask
-
-// Top-level build file where you can add configuration options common to all sub-projects/modules.
-buildscript {
-    repositories {
-        mavenCentral()
-        google()
-    }
-}
-
-allprojects {
-    group = "com.kroger.telemetry"
-    version = "0.0.1"
-
-    repositories {
-        mavenCentral()
-        google()
-    }
-}
-
 plugins {
-    id("com.github.ben-manes.versions") version "0.36.0"
-    id("org.jlleitschuh.gradle.ktlint") version "11.1.0"
+    alias(libs.plugins.android.application) apply false
+    alias(libs.plugins.android.junit5) apply false
+    alias(libs.plugins.compose) apply false
+    alias(libs.plugins.conventions.androidApplication) apply false
+    alias(libs.plugins.conventions.publishedAndroidLibrary) apply false
+    alias(libs.plugins.conventions.publishedKotlinLibrary) apply false
+    alias(libs.plugins.conventions.root)
+    alias(libs.plugins.dependencyAnalysis) apply false
+    alias(libs.plugins.dokka)
+    alias(libs.plugins.gradleVersions) apply false
+    alias(libs.plugins.dagger.hilt) apply false
+    alias(libs.plugins.kotlinter) apply false
+    alias(libs.plugins.kotlinx.kover) apply true
+    alias(libs.plugins.ksp) apply false
+    alias(libs.plugins.mavenPublish) apply false
 }
 
-subprojects {
-    apply(plugin = "org.jlleitschuh.gradle.ktlint")
-
-    configure<org.jlleitschuh.gradle.ktlint.KtlintExtension> {
-        version.set("0.46.1")
-        android.set(true)
-        debug.set(true)
-        reporters {
-            reporter(org.jlleitschuh.gradle.ktlint.reporter.ReporterType.CHECKSTYLE)
-        }
-        filter {
-            exclude("**/generated/**", "**/src/test/**")
+kover {
+    currentProject {
+        createVariant("default") {
+            // no sources and tests in root module
         }
     }
 }
 
-tasks.named("dependencyUpdates", DependencyUpdatesTask::class.java).configure {
-    // optional parameters
-    checkForGradleUpdate = true
-    outputFormatter = "json"
-    outputDir = "build/dependencyUpdates"
-    reportfileName = "report"
+dependencies {
+    kover(project(":android"))
+    kover(project(":context-aware"))
+    kover(project(":firebase"))
+    kover(project(":telemetry"))
 }

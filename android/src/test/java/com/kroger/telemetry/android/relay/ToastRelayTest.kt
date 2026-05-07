@@ -29,7 +29,7 @@ import com.kroger.telemetry.Event
 import com.kroger.telemetry.android.facet.ToastFacet
 import com.kroger.telemetry.facet.Facet
 import com.kroger.telemetry.facet.Significance
-import kotlinx.coroutines.test.runBlockingTest
+import kotlinx.coroutines.test.runTest
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertFalse
 import org.junit.jupiter.api.Assertions.assertTrue
@@ -39,7 +39,11 @@ internal class ToastRelayTest {
     private class FakeToaster : Toaster {
         var didToast = false
         var fakeFunToast: (String, Int) -> Unit = { _, _ -> didToast = true }
-        override suspend fun toast(message: String, length: Int) = fakeFunToast(message, length)
+
+        override suspend fun toast(
+            message: String,
+            length: Int,
+        ) = fakeFunToast(message, length)
     }
 
     private data class TestConfig(
@@ -61,7 +65,7 @@ internal class ToastRelayTest {
 
     @Test
     fun `GIVEN toast relay disabled WHEN event received THEN nothing is toasted`() =
-        runBlockingTest {
+        runTest {
             val config = TestConfig().copy(enabled = false)
             val relay = config.getRelay()
 
@@ -76,7 +80,7 @@ internal class ToastRelayTest {
 
     @Test
     fun `GIVEN toast relay WHEN event received with toast facet THEN facet is toasted`() =
-        runBlockingTest {
+        runTest {
             val config = TestConfig()
             val relay = config.getRelay()
 
@@ -91,11 +95,12 @@ internal class ToastRelayTest {
 
     @Test
     fun `GIVEN toast relay configured to toast all WHEN event received no significance THEN event is not toasted`() =
-        runBlockingTest {
-            val config = TestConfig().copy(
-                toastSignificantEvents = true,
-                minimumSignificance = Significance.ERROR,
-            )
+        runTest {
+            val config =
+                TestConfig().copy(
+                    toastSignificantEvents = true,
+                    minimumSignificance = Significance.ERROR,
+                )
             val relay = config.getRelay()
 
             relay.process(
@@ -109,11 +114,12 @@ internal class ToastRelayTest {
 
     @Test
     fun `GIVEN toast relay configured to toast all WHEN event received with lower than minimum significance THEN event is not toasted`() =
-        runBlockingTest {
-            val config = TestConfig().copy(
-                toastSignificantEvents = true,
-                minimumSignificance = Significance.ERROR,
-            )
+        runTest {
+            val config =
+                TestConfig().copy(
+                    toastSignificantEvents = true,
+                    minimumSignificance = Significance.ERROR,
+                )
             val relay = config.getRelay()
 
             relay.process(
@@ -127,11 +133,12 @@ internal class ToastRelayTest {
 
     @Test
     fun `GIVEN toast relay configured to toast all WHEN event received with minimum significance THEN event is toasted`() =
-        runBlockingTest {
-            val config = TestConfig().copy(
-                toastSignificantEvents = true,
-                minimumSignificance = Significance.ERROR,
-            )
+        runTest {
+            val config =
+                TestConfig().copy(
+                    toastSignificantEvents = true,
+                    minimumSignificance = Significance.ERROR,
+                )
             val relay = config.getRelay()
 
             relay.process(
@@ -145,7 +152,7 @@ internal class ToastRelayTest {
 
     @Test
     fun `GIVEN toast relay configured with bad length WHEN toasting THEN uses length short as default`() =
-        runBlockingTest {
+        runTest {
             val toaster = FakeToaster()
             var lengthUsed = 42
             toaster.fakeFunToast = { _, length -> lengthUsed = length }
@@ -163,7 +170,7 @@ internal class ToastRelayTest {
 
     @Test
     fun `GIVEN an enabled toast relay WHEN disabled THEN toasts will not be shown`() =
-        runBlockingTest {
+        runTest {
             val config = TestConfig().copy(enabled = true)
             val relay = config.getRelay()
 
@@ -182,8 +189,9 @@ internal class ToastRelayTest {
     fun `GIVEN config with mutable backing data WHEN backing data is changed THEN config reflects update`() {
         val mutableBackingInstance = mutableListOf(false)
 
-        class MutableConfig(private val mutableBackingProp: List<Boolean>) :
-            ToastRelay.Configuration by ToastRelay.Configuration.Default() {
+        class MutableConfig(
+            private val mutableBackingProp: List<Boolean>,
+        ) : ToastRelay.Configuration by ToastRelay.Configuration.Default() {
             override var enabled: Boolean
                 get() = mutableBackingProp.first()
                 set(_) = Unit

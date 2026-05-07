@@ -30,6 +30,7 @@ import com.kroger.telemetry.facet.Facet
 
 class BarRelay : TypedRelay<BarFacet> {
     override val type: Class<BarFacet> = BarFacet::class.java
+
     override suspend fun processFacet(facet: BarFacet) {
         val string =
             "completed bar facet ${facet.data}"
@@ -37,4 +38,6 @@ class BarRelay : TypedRelay<BarFacet> {
     }
 }
 
-data class BarFacet(val data: String) : Facet
+data class BarFacet(
+    val data: String,
+) : Facet
