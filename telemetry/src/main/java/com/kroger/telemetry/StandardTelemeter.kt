@@ -27,6 +27,7 @@ package com.kroger.telemetry
 import com.kroger.telemetry.facet.Facet
 import com.kroger.telemetry.facet.FacetResolver
 import com.kroger.telemetry.facet.Failure
+import com.kroger.telemetry.facet.RelayFailure
 import com.kroger.telemetry.facet.ThreadData
 import com.kroger.telemetry.facet.UnresolvedFacet
 import kotlinx.coroutines.CoroutineScope
@@ -55,24 +56,66 @@ internal class StandardTelemeter(
         relays.forEach { relay ->
             events
                 .onEach { event ->
+                    // Skip processing if this Relay is the cause of any RelayFailure event being
+                    // processed. This prevents infinite loops when Relays fail while processing
+                    // their own or each other's failures.
+                    val shouldSkip =
+                        event.facets
+                            .filterIsInstance<RelayFailure>()
+                            .any { relayFailure ->
+                                relayIsSourceOfFailure(relayFailure, relay)
+                            }
+
+                    if (shouldSkip) {
+                        return@onEach
+                    }
+
                     Result
                         .runCatching {
                             relay.process(event)
-                        }.onFailure {
-                            val message = "An error was caught during Relay processing. It was $it"
-                            val facet = Failure(message = message, throwable = it)
-                            // Avoid loops
-                            if (event.facets.contains(facet)) return@onEach
+                        }.onFailure { throwable ->
+                            val message =
+                                "An error was caught during Relay processing. It was $throwable"
+
+                            // If we were already processing a RelayFailure, note it as the cause.
+                            val causeRelayFailure =
+                                event.facets.filterIsInstance<RelayFailure>().firstOrNull()
+
+                            val relayFailureFacet =
+                                RelayFailure(
+                                    sourceRelay = relay,
+                                    message = message,
+                                    throwable = throwable,
+                                    cause = causeRelayFailure,
+                                )
+
+                            val failureFacet = Failure(message = message, throwable = throwable)
+
                             val failureEvent =
                                 object : Event {
                                     override val description: String = message
-                                    override val facets: List<Facet> = listOf(facet)
+                                    override val facets: List<Facet> =
+                                        listOf(relayFailureFacet, failureFacet)
                                 }
                             record(failureEvent)
                         }
                 }.launchIn(coroutineScope)
         }
     }
+
+    /**
+     * Checks if a relay appears anywhere in the cause chain of a [RelayFailure]
+     */
+    private fun relayIsSourceOfFailure(
+        relayFailure: RelayFailure,
+        relay: Relay,
+    ): Boolean =
+        (relayFailure.sourceRelay === relay) ||
+            (
+                relayFailure.cause?.let {
+                    relayIsSourceOfFailure(it, relay)
+                } ?: false
+            )
 
     override fun record(
         event: Event,
