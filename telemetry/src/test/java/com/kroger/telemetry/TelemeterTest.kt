@@ -24,6 +24,8 @@
 
 package com.kroger.telemetry
 
+import com.kroger.telemetry.tracing.NoOpNetworkTraceContext
+import com.kroger.telemetry.tracing.createNetworkTraceContext
 import com.kroger.telemetry.facet.Facet
 import com.kroger.telemetry.facet.FacetResolver
 import com.kroger.telemetry.facet.Failure
@@ -33,6 +35,7 @@ import com.kroger.telemetry.facet.ThreadData
 import com.kroger.telemetry.facet.UnresolvedFacet
 import com.kroger.telemetry.util.FakeEvent
 import com.kroger.telemetry.util.FakeRelay
+import com.kroger.telemetry.util.FakeTraceRecorder
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.test.StandardTestDispatcher
@@ -41,11 +44,14 @@ import kotlinx.coroutines.test.runTest
 import kotlinx.coroutines.withContext
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertFalse
+import org.junit.jupiter.api.Assertions.assertNotEquals
 import org.junit.jupiter.api.Assertions.assertNotNull
+import org.junit.jupiter.api.Assertions.assertNull
 import org.junit.jupiter.api.Assertions.assertSame
 import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.Test
 import kotlin.time.Duration.Companion.milliseconds
+import kotlin.time.TestTimeSource
 
 internal class TelemeterTest {
     @Test
@@ -868,5 +874,191 @@ internal class TelemeterTest {
                 assert(it.facets[1] is ResolvedFacet)
                 assert((it.facets[1] as ResolvedFacet).goodNumber == 8)
             }
+        }
+
+    @Test
+    fun `GIVEN telemeter built with trace recorder WHEN trace called THEN uses provided recorder`() =
+        runTest {
+            val recorder = FakeTraceRecorder()
+            val telemeter =
+                Telemeter.build(
+                    flowConfig = Telemeter.defaultTelemetryFlowConfig.copy(scope = backgroundScope),
+                    traceRecorder = recorder,
+                )
+
+            telemeter.trace("my-trace", mapOf("key" to "value"))
+
+            assertEquals(1, recorder.startSpanCalls.size)
+            assertEquals("my-trace", recorder.startSpanCalls[0].name)
+            assertEquals(mapOf("key" to "value"), recorder.startSpanCalls[0].attributes)
+        }
+
+    @Test
+    fun `GIVEN child telemeter WHEN trace called THEN uses parent trace recorder`() =
+        runTest {
+            val recorder = FakeTraceRecorder()
+            val parent =
+                Telemeter.build(
+                    flowConfig = Telemeter.defaultTelemetryFlowConfig.copy(scope = backgroundScope),
+                    traceRecorder = recorder,
+                )
+            val child = parent.child()
+
+            child.trace("child-trace")
+
+            assertEquals(1, recorder.startSpanCalls.size)
+            assertEquals("child-trace", recorder.startSpanCalls[0].name)
+        }
+
+    @Test
+    fun `GIVEN telemeter built without trace recorder WHEN trace called THEN uses NoOp default`() =
+        runTest {
+            val telemeter =
+                Telemeter.build(
+                    flowConfig = Telemeter.defaultTelemetryFlowConfig.copy(scope = backgroundScope),
+                )
+
+            val trace = telemeter.trace("test")
+            trace.setAttribute("key", "value")
+            trace.addEvent("event")
+            assertSame(NoOpNetworkTraceContext, trace.createNetworkTraceContext("network"))
+            trace.end()
+        }
+
+    @Test
+    fun `GIVEN telemeter WHEN trace called THEN returns trace with root span having null parent and correct name`() =
+        runTest {
+            val telemeter =
+                Telemeter.build(
+                    flowConfig = Telemeter.defaultTelemetryFlowConfig.copy(scope = backgroundScope),
+                    traceRecorder = FakeTraceRecorder(),
+                )
+
+            val trace = telemeter.trace("my-trace")
+
+            assertEquals("my-trace", trace.name)
+            assertNull(trace.parent)
+        }
+
+    @Test
+    fun `GIVEN telemeter with timeSource WHEN trace called THEN span uses provided timeSource`() =
+        runTest {
+            val timeSource = TestTimeSource()
+            val telemeter =
+                Telemeter.build(
+                    flowConfig = Telemeter.defaultTelemetryFlowConfig.copy(scope = backgroundScope),
+                    traceRecorder = FakeTraceRecorder(),
+                    timeSource = timeSource,
+                )
+
+            val trace = telemeter.trace("test")
+            timeSource += 42.milliseconds
+            trace.end()
+
+            assertEquals(42.milliseconds, trace.duration)
+        }
+
+    @Test
+    fun `GIVEN child telemeter WHEN trace called THEN uses parent timeSource`() =
+        runTest {
+            val timeSource = TestTimeSource()
+            val parent =
+                Telemeter.build(
+                    flowConfig = Telemeter.defaultTelemetryFlowConfig.copy(scope = backgroundScope),
+                    traceRecorder = FakeTraceRecorder(),
+                    timeSource = timeSource,
+                )
+            val child = parent.child()
+
+            val trace = child.trace("child-trace")
+            timeSource += 75.milliseconds
+            trace.end()
+
+            assertEquals(75.milliseconds, trace.duration)
+        }
+
+    @Test
+    fun `GIVEN telemeter WHEN trace called THEN trace has a non-empty traceId`() =
+        runTest {
+            val telemeter =
+                Telemeter.build(
+                    flowConfig = Telemeter.defaultTelemetryFlowConfig.copy(scope = backgroundScope),
+                    traceRecorder = FakeTraceRecorder(),
+                )
+
+            val trace = telemeter.trace("test")
+
+            assertTrue(trace.traceId.isNotEmpty())
+        }
+
+    @Test
+    fun `GIVEN telemeter WHEN two traces created THEN each has a unique traceId`() =
+        runTest {
+            val telemeter =
+                Telemeter.build(
+                    flowConfig = Telemeter.defaultTelemetryFlowConfig.copy(scope = backgroundScope),
+                    traceRecorder = FakeTraceRecorder(),
+                )
+
+            val trace1 = telemeter.trace("trace-1")
+            val trace2 = telemeter.trace("trace-2")
+
+            assertTrue(trace1.traceId != trace2.traceId)
+        }
+
+    @Test
+    fun `GIVEN trace WHEN child span created THEN child shares same traceId`() =
+        runTest {
+            val telemeter =
+                Telemeter.build(
+                    flowConfig = Telemeter.defaultTelemetryFlowConfig.copy(scope = backgroundScope),
+                    traceRecorder = FakeTraceRecorder(),
+                )
+
+            val trace = telemeter.trace("test")
+            val child = trace.startChildSpan("child")
+
+            assertEquals(trace.traceId, child.traceId)
+        }
+
+    @Test
+    fun `GIVEN telemeter WHEN trace called THEN returned Trace exposes rootSpan with same properties`() =
+        runTest {
+            val timeSource = TestTimeSource()
+            val telemeter =
+                Telemeter.build(
+                    flowConfig = Telemeter.defaultTelemetryFlowConfig.copy(scope = backgroundScope),
+                    traceRecorder = FakeTraceRecorder(),
+                    timeSource = timeSource,
+                )
+
+            val trace = telemeter.trace("root-trace")
+
+            assertEquals("root-trace", trace.rootSpan.name)
+            assertNull(trace.rootSpan.parent)
+            assertEquals(trace.name, trace.rootSpan.name)
+            assertEquals(trace.parent, trace.rootSpan.parent)
+            assertEquals(trace.traceId, trace.rootSpan.traceId)
+
+            timeSource += 50.milliseconds
+            trace.end()
+
+            assertEquals(trace.duration, trace.rootSpan.duration)
+            assertEquals(50.milliseconds, trace.rootSpan.duration)
+        }
+
+    @Test
+    fun `GIVEN trace WHEN child span created THEN trace spanId differs from child spanId`() =
+        runTest {
+            val telemeter =
+                Telemeter.build(
+                    flowConfig = Telemeter.defaultTelemetryFlowConfig.copy(scope = backgroundScope),
+                    traceRecorder = FakeTraceRecorder(),
+                )
+
+            val trace = telemeter.trace("test")
+            val child = trace.startChildSpan("child")
+
+            assertNotEquals(trace.spanId, child.spanId)
         }
 }

@@ -13,6 +13,7 @@ kover {
 }
 
 dependencies {
+    implementation(libs.injectJavax)
     implementation(libs.kotlinx.coroutinesCore)
 
     junit5()
