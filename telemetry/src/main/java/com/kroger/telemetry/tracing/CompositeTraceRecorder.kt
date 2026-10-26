@@ -45,9 +45,22 @@ import kotlin.time.Duration
 public class CompositeTraceRecorder @Inject constructor(
     private val recorders: Set<@JvmSuppressWildcards TraceRecorder>,
 ) : TraceRecorder {
+
+    init {
+        val recorderIds = recorders.map { it.recorderId }
+        require(recorderIds.size == recorderIds.toSet().size) {
+            "All TraceRecorder instances must have unique recorderIds. " +
+                "Found duplicates: ${recorderIds.groupingBy { it }.eachCount().filter { it.value > 1 }.keys}"
+        }
+    }
+
     override val recorderId: String = "composite"
 
-    override fun startSpan(name: String, attributes: Map<String, Any?>, parent: SpanHandle?): SpanHandle {
+    override fun startSpan(
+        name: String,
+        attributes: Map<String, Any?>,
+        parent: SpanHandle?,
+    ): SpanHandle {
         if (parent == null) {
             val recorderList = recorders.toList()
             val handles = recorderList.map { it.startSpan(name, attributes) }
@@ -107,21 +120,23 @@ public class CompositeTraceRecorder @Inject constructor(
 
     override fun getAllRequestTagHeaders(): Map<String, String> =
         recorders
-            .filter { it.getRequestTagHeaderName().isNotEmpty() }
-            .associate { it.recorderId to it.getRequestTagHeaderName() }
+            .flatMap { it.getAllRequestTagHeaders().entries }
+            .associate { it.key to it.value }
 
     override fun startAllNetworkRequestTimings(
         requestTags: Map<String, String>,
         url: String,
     ): NetworkRequestTimingScope {
-        val scopes = requestTags.mapNotNull { (recorderId, requestTag) ->
-            recorders.firstOrNull { it.recorderId == recorderId }
-                ?.startNetworkRequestTiming(requestTag, url)
-        }
+        val scopes = recorders.map { it.startAllNetworkRequestTimings(requestTags, url) }
         return CompositeNetworkRequestTimingScope(scopes)
     }
 
-    override fun endSpan(span: SpanHandle, status: SpanStatus, duration: Duration, error: Throwable?) {
+    override fun endSpan(
+        span: SpanHandle,
+        status: SpanStatus,
+        duration: Duration,
+        error: Throwable?,
+    ) {
         val composite = requireCompositeHandle(span)
         val durationMs = duration.inWholeMilliseconds
 
@@ -191,6 +206,7 @@ private class CompositeSpanHandle(
     val stepName: String? = null,
     val parentOnComplete: ((Long) -> Unit)? = null,
 ) : SpanHandle {
+
     /** Accumulated duration (in milliseconds) of all direct child steps. */
     val stepDurationMsSum = AtomicLong(0L)
 

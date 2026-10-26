@@ -63,10 +63,10 @@ public interface Telemeter {
         withFacets: List<Facet>? = null,
     )
 
-    /** Configuration for the event flow that propagates events to relays. */
+    /** Configuration for the event flow that propagates events to relays. See [defaultTelemetryFlowConfig] & [defaultSharedFlowConfig] */
     public val flowConfig: EventFlowConfig
 
-    /** The [TraceRecorder] used to record span lifecycle events. */
+    /** The [TraceRecorder] used to record span lifecycle events. Use [com.kroger.telemetry.tracing.CompositeTraceRecorder] if you have multiple backends */
     public val traceRecorder: TraceRecorder
 
     /** The [TimeSource] used to measure span durations. */

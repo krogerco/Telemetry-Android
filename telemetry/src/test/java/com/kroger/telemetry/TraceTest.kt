@@ -39,13 +39,15 @@ import org.junit.jupiter.api.Assertions.assertNull
 import org.junit.jupiter.api.Assertions.assertSame
 import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.Test
+import java.util.concurrent.CyclicBarrier
+import java.util.concurrent.atomic.AtomicReference
 import kotlin.test.assertFailsWith
 import kotlin.time.Duration.Companion.milliseconds
 import kotlin.time.TestTimeSource
 
 internal class TraceTest {
 
-    // --- RecorderSpan ---
+    //region RecorderSpan
 
     @Test
     fun `GIVEN recorder span WHEN setAttribute called THEN delegates to recorder with correct handle`() {
@@ -186,7 +188,9 @@ internal class TraceTest {
         assertSame(NoOpNetworkTraceContext, context)
     }
 
-    // --- NoOpTraceRecorder ---
+    //endregion
+
+    //region NoOpTraceRecorder
 
     @Test
     fun `GIVEN NoOpTraceRecorder WHEN all operations called THEN no exceptions thrown and context is null`() {
@@ -199,7 +203,9 @@ internal class TraceTest {
         assertNull(NoOpTraceRecorder.getNetworkTraceContext(childHandle))
     }
 
-    // --- traceStep ---
+    //endregion
+
+    //region traceStep
 
     @Test
     fun `GIVEN span WHEN traceStep block succeeds THEN returns result and ends child with Success`() =
@@ -280,7 +286,9 @@ internal class TraceTest {
             assertEquals(attrs, recorder.startSpanCalls[1].attributes)
         }
 
-    // --- spanId ---
+    //endregion
+
+    //region spanId
 
     @Test
     fun `GIVEN recorder span WHEN created THEN spanId is non-empty`() {
@@ -291,7 +299,9 @@ internal class TraceTest {
         assertTrue(span.spanId.isNotEmpty())
     }
 
-    // --- Span integration ---
+    //endregion
+
+    //region Span integration
 
     @Test
     fun `GIVEN recorder span WHEN end called THEN duration is set`() {
@@ -315,4 +325,33 @@ internal class TraceTest {
         assertSame(parentSpan, child.parent)
         assertEquals("child", child.name)
     }
+
+    @Test
+    fun `GIVEN concurrent end calls WHEN second end returns THEN duration is non-null`() {
+        val recorder = FakeTraceRecorder()
+        val handle = recorder.startSpan("test")
+        val span = SpanImpl(handle, recorder, TestTimeSource(), "test-trace-id", "test", null)
+
+        val barrier = CyclicBarrier(2)
+        val durationFromThread = AtomicReference<Any?>(Missing)
+
+        val thread = Thread {
+            barrier.await()
+            span.end()
+            durationFromThread.set(span.duration)
+        }
+        thread.start()
+
+        barrier.await()
+        span.end()
+
+        thread.join()
+
+        assertNotNull(span.duration)
+        assertNotNull(durationFromThread.get())
+    }
+
+    //endregion
 }
+
+private object Missing

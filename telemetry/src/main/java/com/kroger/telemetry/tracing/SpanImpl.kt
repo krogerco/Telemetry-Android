@@ -25,7 +25,6 @@
 package com.kroger.telemetry.tracing
 
 import java.util.UUID
-import java.util.concurrent.atomic.AtomicBoolean
 import kotlin.time.Duration
 import kotlin.time.TimeMark
 import kotlin.time.TimeSource
@@ -38,9 +37,10 @@ import kotlin.time.TimeSource
  * a [TimeMark] is captured at construction, and the elapsed [Duration] is computed once when
  * [end] is called and forwarded to the recorder via [TraceRecorder.endSpan].
  *
- * Thread safety: [end] uses an [AtomicBoolean] guard so that only the first invocation
+ * Thread safety: [end] uses a synchronized guard so that only the first invocation
  * takes effect — duplicate calls are silently ignored, and the recorder receives exactly
- * one [TraceRecorder.endSpan] call per span.
+ * one [TraceRecorder.endSpan] call per span. The [duration] field is assigned inside
+ * the lock so that a concurrent caller cannot observe it as `null` after [end] returns.
  *
  * Child spans are created via [startChildSpan], which obtains a new [SpanHandle] from the
  * recorder with the current handle as parent. Children inherit the same [traceId],
@@ -64,7 +64,8 @@ internal class SpanImpl(
     /** Unique identifier for this span, generated as a random UUID. */
     override val spanId: String = UUID.randomUUID().toString()
     private val startMark: TimeMark = timeSource.markNow()
-    private val ended = AtomicBoolean(false)
+    private val lock = Any()
+    private var ended = false
 
     /**
      * The elapsed duration of this span, or `null` if [end] has not yet been called.
@@ -111,9 +112,11 @@ internal class SpanImpl(
      * stored in [duration], and forwarded to the recorder. Subsequent calls are no-ops.
      */
     override fun end(status: SpanStatus, error: Throwable?) {
-        if (!ended.compareAndSet(false, true)) return
-        val elapsed = startMark.elapsedNow()
-        duration = elapsed
+        val elapsed = synchronized(lock) {
+            if (ended) return
+            ended = true
+            startMark.elapsedNow().also { duration = it }
+        }
         recorder.endSpan(handle, status, elapsed, error)
     }
 }

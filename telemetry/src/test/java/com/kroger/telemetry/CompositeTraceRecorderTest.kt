@@ -33,14 +33,15 @@ import org.junit.jupiter.api.Assertions.assertFalse
 import org.junit.jupiter.api.Assertions.assertNull
 import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.Test
+import kotlin.test.assertFailsWith
 import kotlin.time.Duration.Companion.milliseconds
 
 internal class CompositeTraceRecorderTest {
 
     @Test
     fun `GIVEN composite with multiple recorders WHEN startTrace called THEN delegates to all recorders`() {
-        val recorder1 = FakeTraceRecorder()
-        val recorder2 = FakeTraceRecorder()
+        val recorder1 = FakeTraceRecorder(recorderId = "r1")
+        val recorder2 = FakeTraceRecorder(recorderId = "r2")
         val composite = CompositeTraceRecorder(setOf(recorder1, recorder2))
 
         composite.startSpan("my-trace", mapOf("key" to "value"))
@@ -239,8 +240,8 @@ internal class CompositeTraceRecorderTest {
 
     @Test
     fun `GIVEN composite with all null contexts WHEN getNetworkTraceContext called THEN returns null`() {
-        val recorder1 = FakeTraceRecorder()
-        val recorder2 = FakeTraceRecorder()
+        val recorder1 = FakeTraceRecorder(recorderId = "r1")
+        val recorder2 = FakeTraceRecorder(recorderId = "r2")
         val composite = CompositeTraceRecorder(setOf(recorder1, recorder2))
 
         val root = composite.startSpan("root")
@@ -251,8 +252,8 @@ internal class CompositeTraceRecorderTest {
 
     @Test
     fun `GIVEN composite with multiple recorders WHEN endTrace called THEN delegates to all recorders`() {
-        val recorder1 = FakeTraceRecorder()
-        val recorder2 = FakeTraceRecorder()
+        val recorder1 = FakeTraceRecorder(recorderId = "r1")
+        val recorder2 = FakeTraceRecorder(recorderId = "r2")
         val composite = CompositeTraceRecorder(setOf(recorder1, recorder2))
 
         val root = composite.startSpan("root")
@@ -370,5 +371,70 @@ internal class CompositeTraceRecorderTest {
         scope.reportResponse(200, "OK")
         scope.finish()
         assertTrue(recorder1.startNetworkTimingCalls.isEmpty())
+    }
+
+    @Test
+    fun `GIVEN recorders with unique ids WHEN CompositeTraceRecorder created THEN no exception thrown`() {
+        val recorder1 = FakeTraceRecorder(recorderId = "r1")
+        val recorder2 = FakeTraceRecorder(recorderId = "r2")
+
+        CompositeTraceRecorder(setOf(recorder1, recorder2))
+    }
+
+    @Test
+    fun `GIVEN recorders with duplicate ids WHEN CompositeTraceRecorder created THEN throws IllegalArgumentException`() {
+        val recorder1 = FakeTraceRecorder(recorderId = "duplicate")
+        val recorder2 = FakeTraceRecorder(recorderId = "duplicate")
+
+        val exception = assertFailsWith<IllegalArgumentException> {
+            CompositeTraceRecorder(setOf(recorder1, recorder2))
+        }
+
+        assertTrue(exception.message!!.contains("duplicate"))
+    }
+
+    @Test
+    fun `GIVEN single recorder WHEN CompositeTraceRecorder created THEN no exception thrown`() {
+        val recorder = FakeTraceRecorder()
+
+        CompositeTraceRecorder(setOf(recorder))
+    }
+
+    @Test
+    fun `GIVEN empty recorders WHEN CompositeTraceRecorder created THEN no exception thrown`() {
+        CompositeTraceRecorder(emptySet())
+    }
+
+    @Test
+    fun `GIVEN nested composite WHEN getAllRequestTagHeaders called THEN returns leaf recorder headers`() {
+        val leaf1 = FakeTraceRecorder(recorderId = "r1").apply { fakeRequestTagHeaderName = "x-r1" }
+        val leaf2 = FakeTraceRecorder(recorderId = "r2").apply { fakeRequestTagHeaderName = "x-r2" }
+        val inner = CompositeTraceRecorder(setOf(leaf1))
+        val outer = CompositeTraceRecorder(setOf(inner, leaf2))
+
+        val headers = outer.getAllRequestTagHeaders()
+
+        assertEquals(mapOf("r1" to "x-r1", "r2" to "x-r2"), headers)
+    }
+
+    @Test
+    fun `GIVEN nested composite WHEN startAllNetworkRequestTimings called THEN routes to leaf recorders`() {
+        val leaf1 = FakeTraceRecorder(recorderId = "r1")
+        val leaf2 = FakeTraceRecorder(recorderId = "r2")
+        val inner = CompositeTraceRecorder(setOf(leaf1))
+        val outer = CompositeTraceRecorder(setOf(inner, leaf2))
+
+        outer.startAllNetworkRequestTimings(
+            requestTags = mapOf("r1" to "tag-1", "r2" to "tag-2"),
+            url = "https://example.com",
+        )
+
+        assertEquals(1, leaf1.startNetworkTimingCalls.size)
+        assertEquals("tag-1", leaf1.startNetworkTimingCalls[0].requestTag)
+        assertEquals("https://example.com", leaf1.startNetworkTimingCalls[0].url)
+
+        assertEquals(1, leaf2.startNetworkTimingCalls.size)
+        assertEquals("tag-2", leaf2.startNetworkTimingCalls[0].requestTag)
+        assertEquals("https://example.com", leaf2.startNetworkTimingCalls[0].url)
     }
 }
