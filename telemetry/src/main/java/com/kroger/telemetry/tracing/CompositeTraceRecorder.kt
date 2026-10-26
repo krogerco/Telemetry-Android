@@ -45,7 +45,6 @@ import kotlin.time.Duration
 public class CompositeTraceRecorder @Inject constructor(
     private val recorders: Set<@JvmSuppressWildcards TraceRecorder>,
 ) : TraceRecorder {
-
     init {
         val recorderIds = recorders.map { it.recorderId }
         require(recorderIds.size == recorderIds.toSet().size) {
@@ -84,7 +83,11 @@ public class CompositeTraceRecorder @Inject constructor(
         )
     }
 
-    override fun setAttribute(span: SpanHandle, key: String, value: Any?) {
+    override fun setAttribute(
+        span: SpanHandle,
+        key: String,
+        value: Any?,
+    ) {
         val composite = requireCompositeHandle(span)
         val prefixedKey = composite.stepifiedKey(key)
         composite.forEachRecorder { recorder, handle ->
@@ -92,7 +95,10 @@ public class CompositeTraceRecorder @Inject constructor(
         }
     }
 
-    override fun addEvent(span: SpanHandle, name: String) {
+    override fun addEvent(
+        span: SpanHandle,
+        name: String,
+    ) {
         val composite = requireCompositeHandle(span)
         val prefixedName = composite.stepifiedKey(name)
         composite.forEachRecorder { recorder, handle ->
@@ -167,7 +173,11 @@ public class CompositeTraceRecorder @Inject constructor(
         }
     }
 
-    private fun reportToRecorders(composite: CompositeSpanHandle, key: String, value: Any?) {
+    private fun reportToRecorders(
+        composite: CompositeSpanHandle,
+        key: String,
+        value: Any?,
+    ) {
         val prefixedKey = composite.stepifiedKey(key)
         composite.forEachRecorder { recorder, handle ->
             recorder.setAttribute(handle, prefixedKey, value)
@@ -188,7 +198,10 @@ public class CompositeTraceRecorder @Inject constructor(
 }
 
 /** Builds a dot-separated key from a step name and an attribute/event key. */
-private fun buildStepKey(stepName: String, key: String): String = "${stepName}.${key}"
+private fun buildStepKey(
+    stepName: String,
+    key: String,
+): String = "$stepName.$key"
 
 /**
  * Composite [SpanHandle] that bundles one handle per delegate recorder.
@@ -206,13 +219,11 @@ private class CompositeSpanHandle(
     val stepName: String? = null,
     val parentOnComplete: ((Long) -> Unit)? = null,
 ) : SpanHandle {
-
     /** Accumulated duration (in milliseconds) of all direct child steps. */
     val stepDurationMsSum = AtomicLong(0L)
 
     /** Prefixes [key] with [stepName] if this is a child span, otherwise returns [key] unchanged. */
-    fun stepifiedKey(key: String): String =
-        if (stepName != null) buildStepKey(stepName, key) else key
+    fun stepifiedKey(key: String): String = if (stepName != null) buildStepKey(stepName, key) else key
 
     /** Iterates over each (recorder, handle) pair and applies [action]. */
     inline fun forEachRecorder(action: (TraceRecorder, SpanHandle) -> Unit) {
@@ -223,7 +234,10 @@ private class CompositeSpanHandle(
 private class CompositeNetworkRequestTimingScope(
     private val scopes: List<NetworkRequestTimingScope>,
 ) : NetworkRequestTimingScope {
-    override fun reportResponse(statusCode: Int, responseMessage: String) {
+    override fun reportResponse(
+        statusCode: Int,
+        responseMessage: String,
+    ) {
         scopes.forEach { it.reportResponse(statusCode, responseMessage) }
     }
 

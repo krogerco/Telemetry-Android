@@ -25,7 +25,6 @@
 package com.kroger.telemetry
 
 import com.kroger.telemetry.tracing.CompositeTraceRecorder
-import com.kroger.telemetry.tracing.NoOpNetworkRequestTimingScope
 import com.kroger.telemetry.tracing.SpanStatus
 import com.kroger.telemetry.util.FakeTraceRecorder
 import org.junit.jupiter.api.Assertions.assertEquals
@@ -37,7 +36,6 @@ import kotlin.test.assertFailsWith
 import kotlin.time.Duration.Companion.milliseconds
 
 internal class CompositeTraceRecorderTest {
-
     @Test
     fun `GIVEN composite with multiple recorders WHEN startTrace called THEN delegates to all recorders`() {
         val recorder1 = FakeTraceRecorder(recorderId = "r1")
@@ -349,10 +347,11 @@ internal class CompositeTraceRecorderTest {
         val recorder1 = FakeTraceRecorder(recorderId = "r1")
         val composite = CompositeTraceRecorder(setOf(recorder1))
 
-        val scope = composite.startAllNetworkRequestTimings(
-            requestTags = mapOf("r1" to "tag-1", "unknown" to "tag-x"),
-            url = "https://example.com",
-        )
+        val scope =
+            composite.startAllNetworkRequestTimings(
+                requestTags = mapOf("r1" to "tag-1", "unknown" to "tag-x"),
+                url = "https://example.com",
+            )
 
         assertEquals(1, recorder1.startNetworkTimingCalls.size)
     }
@@ -362,10 +361,11 @@ internal class CompositeTraceRecorderTest {
         val recorder1 = FakeTraceRecorder(recorderId = "r1")
         val composite = CompositeTraceRecorder(setOf(recorder1))
 
-        val scope = composite.startAllNetworkRequestTimings(
-            requestTags = mapOf("unknown" to "tag-x"),
-            url = "https://example.com",
-        )
+        val scope =
+            composite.startAllNetworkRequestTimings(
+                requestTags = mapOf("unknown" to "tag-x"),
+                url = "https://example.com",
+            )
 
         // Should not throw when used
         scope.reportResponse(200, "OK")
@@ -386,9 +386,10 @@ internal class CompositeTraceRecorderTest {
         val recorder1 = FakeTraceRecorder(recorderId = "duplicate")
         val recorder2 = FakeTraceRecorder(recorderId = "duplicate")
 
-        val exception = assertFailsWith<IllegalArgumentException> {
-            CompositeTraceRecorder(setOf(recorder1, recorder2))
-        }
+        val exception =
+            assertFailsWith<IllegalArgumentException> {
+                CompositeTraceRecorder(setOf(recorder1, recorder2))
+            }
 
         assertTrue(exception.message!!.contains("duplicate"))
     }

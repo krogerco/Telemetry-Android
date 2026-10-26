@@ -24,10 +24,10 @@
 
 package com.kroger.telemetry
 
+import com.kroger.telemetry.tracing.NoOpNetworkTraceContext
 import com.kroger.telemetry.tracing.NoOpTraceRecorder
 import com.kroger.telemetry.tracing.SpanImpl
 import com.kroger.telemetry.tracing.SpanStatus
-import com.kroger.telemetry.tracing.NoOpNetworkTraceContext
 import com.kroger.telemetry.tracing.createNetworkTraceContext
 import com.kroger.telemetry.tracing.step
 import com.kroger.telemetry.util.FakeTraceRecorder
@@ -46,7 +46,6 @@ import kotlin.time.Duration.Companion.milliseconds
 import kotlin.time.TestTimeSource
 
 internal class TraceTest {
-
     //region RecorderSpan
 
     @Test
@@ -165,10 +164,11 @@ internal class TraceTest {
         val handle = recorder.startSpan("test")
         val span = SpanImpl(handle, recorder, TestTimeSource(), "test-trace-id", "test", null)
 
-        val context = span.createNetworkTraceContext(
-            "network",
-            mapOf("url" to "https://example.com", "method" to "GET"),
-        )
+        val context =
+            span.createNetworkTraceContext(
+                "network",
+                mapOf("url" to "https://example.com", "method" to "GET"),
+            )
 
         assertEquals(mapOf("fake" to "trace-id-123"), context.requestTags)
         val attrKeys = recorder.setAttributeCalls.map { it.key }
@@ -335,11 +335,12 @@ internal class TraceTest {
         val barrier = CyclicBarrier(2)
         val durationFromThread = AtomicReference<Any?>(Missing)
 
-        val thread = Thread {
-            barrier.await()
-            span.end()
-            durationFromThread.set(span.duration)
-        }
+        val thread =
+            Thread {
+                barrier.await()
+                span.end()
+                durationFromThread.set(span.duration)
+            }
         thread.start()
 
         barrier.await()

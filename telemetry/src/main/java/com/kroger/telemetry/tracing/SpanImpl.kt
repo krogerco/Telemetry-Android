@@ -80,18 +80,22 @@ internal class SpanImpl(
      * The child shares this span's [traceId], [recorder], and [timeSource], and
      * sets this span as its [parent].
      */
-    override fun startChildSpan(name: String, attributes: Map<String, Any?>): Span {
+    override fun startChildSpan(
+        name: String,
+        attributes: Map<String, Any?>,
+    ): Span {
         val childHandle = recorder.startSpan(name, attributes, parent = handle)
         return SpanImpl(childHandle, recorder, timeSource, traceId, name, parent = this)
     }
 
     /** Sets an attribute on this span via the recorder. */
-    override fun setAttribute(key: String, value: Any?) =
-        recorder.setAttribute(handle, key, value)
+    override fun setAttribute(
+        key: String,
+        value: Any?,
+    ) = recorder.setAttribute(handle, key, value)
 
     /** Adds a timestamped event with the given [name] to this span via the recorder. */
-    override fun addEvent(name: String) =
-        recorder.addEvent(handle, name)
+    override fun addEvent(name: String) = recorder.addEvent(handle, name)
 
     /** Returns a [NetworkTraceContext] wrapping the recorder's context, or [NoOpNetworkTraceContext] if unavailable. */
     override fun getNetworkTraceContext(): NetworkTraceContext {
@@ -111,12 +115,16 @@ internal class SpanImpl(
      * Only the first call takes effect: the elapsed duration is computed from [timeSource],
      * stored in [duration], and forwarded to the recorder. Subsequent calls are no-ops.
      */
-    override fun end(status: SpanStatus, error: Throwable?) {
-        val elapsed = synchronized(lock) {
-            if (ended) return
-            ended = true
-            startMark.elapsedNow().also { duration = it }
-        }
+    override fun end(
+        status: SpanStatus,
+        error: Throwable?,
+    ) {
+        val elapsed =
+            synchronized(lock) {
+                if (ended) return
+                ended = true
+                startMark.elapsedNow().also { duration = it }
+            }
         recorder.endSpan(handle, status, elapsed, error)
     }
 }

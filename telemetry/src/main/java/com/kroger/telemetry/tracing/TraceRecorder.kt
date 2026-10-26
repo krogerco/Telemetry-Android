@@ -60,10 +60,17 @@ public interface TraceRecorder {
     ): SpanHandle
 
     /** Attaches a key-value attribute to the span identified by [span]. */
-    public fun setAttribute(span: SpanHandle, key: String, value: Any?)
+    public fun setAttribute(
+        span: SpanHandle,
+        key: String,
+        value: Any?,
+    )
 
     /** Records a timestamped event with the given [name] on the span identified by [span]. */
-    public fun addEvent(span: SpanHandle, name: String)
+    public fun addEvent(
+        span: SpanHandle,
+        name: String,
+    )
 
     /**
      * Ends the span identified by [span].
@@ -73,7 +80,12 @@ public interface TraceRecorder {
      * @param duration The elapsed duration of the span, as measured by the caller.
      * @param error The error associated with the span, if [status] is [SpanStatus.Error].
      */
-    public fun endSpan(span: SpanHandle, status: SpanStatus, duration: Duration, error: Throwable? = null)
+    public fun endSpan(
+        span: SpanHandle,
+        status: SpanStatus,
+        duration: Duration,
+        error: Throwable? = null,
+    )
 
     /**
      * Returns an opaque network trace context string for distributed trace propagation,
@@ -162,9 +174,29 @@ internal object NoOpTraceRecorder : TraceRecorder {
 
     private object NoOpHandle : SpanHandle
 
-    override fun startSpan(name: String, attributes: Map<String, Any?>, parent: SpanHandle?): SpanHandle = NoOpHandle
-    override fun setAttribute(span: SpanHandle, key: String, value: Any?) {}
-    override fun addEvent(span: SpanHandle, name: String) {}
-    override fun endSpan(span: SpanHandle, status: SpanStatus, duration: Duration, error: Throwable?) {}
+    override fun startSpan(
+        name: String,
+        attributes: Map<String, Any?>,
+        parent: SpanHandle?,
+    ): SpanHandle = NoOpHandle
+
+    override fun setAttribute(
+        span: SpanHandle,
+        key: String,
+        value: Any?,
+    ) {}
+
+    override fun addEvent(
+        span: SpanHandle,
+        name: String,
+    ) {}
+
+    override fun endSpan(
+        span: SpanHandle,
+        status: SpanStatus,
+        duration: Duration,
+        error: Throwable?,
+    ) {}
+
     override fun getNetworkTraceContext(span: SpanHandle): String? = null
 }

@@ -57,10 +57,16 @@ public interface Span {
      * Creates and starts a new child span with the given [name] and optional [attributes].
      * The child inherits this span's [traceId].
      */
-    public fun startChildSpan(name: String, attributes: Map<String, Any?> = emptyMap()): Span
+    public fun startChildSpan(
+        name: String,
+        attributes: Map<String, Any?> = emptyMap(),
+    ): Span
 
     /** Attaches a key-value attribute to this span. */
-    public fun setAttribute(key: String, value: Any?)
+    public fun setAttribute(
+        key: String,
+        value: Any?,
+    )
 
     /** Records a timestamped event with the given [name] on this span. */
     public fun addEvent(name: String)
@@ -70,7 +76,10 @@ public interface Span {
      * After this call, [duration] will be set. Implementations should treat
      * duplicate calls as no-ops.
      */
-    public fun end(status: SpanStatus = SpanStatus.Success, error: Throwable? = null)
+    public fun end(
+        status: SpanStatus = SpanStatus.Success,
+        error: Throwable? = null,
+    )
 
     /**
      * Returns a [NetworkTraceContext] for distributed trace propagation.
@@ -129,7 +138,7 @@ public fun Span.createNetworkTraceContext(
     name: String,
     attributes: Map<String, Any?> = emptyMap(),
 ): NetworkTraceContext {
-    attributes.forEach { (key, value) -> setAttribute("${name}.${key}", value) }
+    attributes.forEach { (key, value) -> setAttribute("$name.$key", value) }
     return getNetworkTraceContext()
 }
 

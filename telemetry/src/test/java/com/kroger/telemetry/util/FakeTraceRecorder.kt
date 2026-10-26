@@ -27,14 +27,16 @@ package com.kroger.telemetry.util
 import com.kroger.telemetry.tracing.NetworkRequestTimingScope
 import com.kroger.telemetry.tracing.NoOpNetworkRequestTimingScope
 import com.kroger.telemetry.tracing.SpanHandle
-import com.kroger.telemetry.tracing.TraceRecorder
 import com.kroger.telemetry.tracing.SpanStatus
+import com.kroger.telemetry.tracing.TraceRecorder
 import kotlin.time.Duration
 
 public class FakeTraceRecorder(
     override val recorderId: String = "fake",
 ) : TraceRecorder {
-    public class FakeHandle(public val id: Int = 0) : SpanHandle
+    public class FakeHandle(
+        public val id: Int = 0,
+    ) : SpanHandle
 
     public data class StartSpanCall(
         val name: String,
@@ -43,9 +45,16 @@ public class FakeTraceRecorder(
         val handle: FakeHandle,
     )
 
-    public data class SetAttributeCall(val handle: SpanHandle, val key: String, val value: Any?)
+    public data class SetAttributeCall(
+        val handle: SpanHandle,
+        val key: String,
+        val value: Any?,
+    )
 
-    public data class AddEventCall(val handle: SpanHandle, val name: String)
+    public data class AddEventCall(
+        val handle: SpanHandle,
+        val name: String,
+    )
 
     public data class EndSpanCall(
         val handle: SpanHandle,
@@ -71,21 +80,37 @@ public class FakeTraceRecorder(
     public var networkTimingScope: NetworkRequestTimingScope = NoOpNetworkRequestTimingScope
     private var handleCounter = 0
 
-    override fun startSpan(name: String, attributes: Map<String, Any?>, parent: SpanHandle?): SpanHandle {
+    override fun startSpan(
+        name: String,
+        attributes: Map<String, Any?>,
+        parent: SpanHandle?,
+    ): SpanHandle {
         val handle = FakeHandle(handleCounter++)
         startSpanCalls.add(StartSpanCall(name, attributes, parent, handle))
         return handle
     }
 
-    override fun setAttribute(span: SpanHandle, key: String, value: Any?) {
+    override fun setAttribute(
+        span: SpanHandle,
+        key: String,
+        value: Any?,
+    ) {
         setAttributeCalls.add(SetAttributeCall(span, key, value))
     }
 
-    override fun addEvent(span: SpanHandle, name: String) {
+    override fun addEvent(
+        span: SpanHandle,
+        name: String,
+    ) {
         addEventCalls.add(AddEventCall(span, name))
     }
 
-    override fun endSpan(span: SpanHandle, status: SpanStatus, duration: Duration, error: Throwable?) {
+    override fun endSpan(
+        span: SpanHandle,
+        status: SpanStatus,
+        duration: Duration,
+        error: Throwable?,
+    ) {
         endSpanCalls.add(EndSpanCall(span, status, duration, error))
     }
 
@@ -96,7 +121,10 @@ public class FakeTraceRecorder(
 
     override fun getRequestTagHeaderName(): String = fakeRequestTagHeaderName
 
-    override fun startNetworkRequestTiming(requestTag: String, url: String): NetworkRequestTimingScope {
+    override fun startNetworkRequestTiming(
+        requestTag: String,
+        url: String,
+    ): NetworkRequestTimingScope {
         startNetworkTimingCalls.add(StartNetworkTimingCall(requestTag, url))
         return networkTimingScope
     }

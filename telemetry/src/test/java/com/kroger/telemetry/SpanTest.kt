@@ -25,8 +25,8 @@
 package com.kroger.telemetry
 
 import com.kroger.telemetry.tracing.NoOpTraceRecorder
-import com.kroger.telemetry.tracing.SpanImpl
 import com.kroger.telemetry.tracing.Span
+import com.kroger.telemetry.tracing.SpanImpl
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertNotEquals
 import org.junit.jupiter.api.Assertions.assertNull
@@ -37,7 +37,6 @@ import kotlin.time.Duration.Companion.milliseconds
 import kotlin.time.TestTimeSource
 
 internal class SpanTest {
-
     private fun createSpan(
         name: String = "test",
         parent: Span? = null,

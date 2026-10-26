@@ -25,13 +25,23 @@
 package com.kroger.telemetry.tracing
 
 public interface NetworkRequestTimingScope {
-    public fun reportResponse(statusCode: Int, responseMessage: String)
+    public fun reportResponse(
+        statusCode: Int,
+        responseMessage: String,
+    )
+
     public fun reportError(throwable: Throwable)
+
     public fun finish()
 }
 
 public object NoOpNetworkRequestTimingScope : NetworkRequestTimingScope {
-    override fun reportResponse(statusCode: Int, responseMessage: String): Unit = Unit
+    override fun reportResponse(
+        statusCode: Int,
+        responseMessage: String,
+    ): Unit = Unit
+
     override fun reportError(throwable: Throwable): Unit = Unit
+
     override fun finish(): Unit = Unit
 }

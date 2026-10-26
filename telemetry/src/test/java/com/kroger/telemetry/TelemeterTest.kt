@@ -24,8 +24,6 @@
 
 package com.kroger.telemetry
 
-import com.kroger.telemetry.tracing.NoOpNetworkTraceContext
-import com.kroger.telemetry.tracing.createNetworkTraceContext
 import com.kroger.telemetry.facet.Facet
 import com.kroger.telemetry.facet.FacetResolver
 import com.kroger.telemetry.facet.Failure
@@ -33,6 +31,8 @@ import com.kroger.telemetry.facet.Prefix
 import com.kroger.telemetry.facet.RelayFailure
 import com.kroger.telemetry.facet.ThreadData
 import com.kroger.telemetry.facet.UnresolvedFacet
+import com.kroger.telemetry.tracing.NoOpNetworkTraceContext
+import com.kroger.telemetry.tracing.createNetworkTraceContext
 import com.kroger.telemetry.util.FakeEvent
 import com.kroger.telemetry.util.FakeRelay
 import com.kroger.telemetry.util.FakeTraceRecorder
