@@ -29,9 +29,9 @@ import kotlin.time.Duration
 /**
  * Backend interface for recording span lifecycle events.
  *
- * Implementations translate these calls into provider-specific tracing operations
- * (e.g. Dynatrace actions, OpenTelemetry exports). The library interacts with spans
- * through opaque [SpanHandle] tokens — the recorder creates handles via [startSpan]
+ * Implementations translate these calls into provider-specific tracing operations.
+ * The library interacts with spans through opaque [SpanHandle] tokens — the
+ * recorder creates handles via [startSpan]
  * and receives them back on subsequent calls.
  *
  * Implementations do not need to guard against duplicate [endSpan] calls; that
@@ -41,7 +41,7 @@ public interface TraceRecorder {
     /**
      * Opaque identifier for this recorder, used to route network request tags back to
      * the recorder that produced them. Implementations should return a stable, non-empty
-     * string (e.g. `"dynatrace"`).
+     * string (e.g. `"composite"`).
      */
     public val recorderId: String
 
