@@ -1,7 +1,18 @@
+package com.kroger.telemetry.tracing
+
+import org.junit.jupiter.api.Assertions.assertEquals
+import org.junit.jupiter.api.Assertions.assertNotEquals
+import org.junit.jupiter.api.Assertions.assertNull
+import org.junit.jupiter.api.Assertions.assertSame
+import org.junit.jupiter.api.Assertions.assertTrue
+import org.junit.jupiter.api.Test
+import kotlin.time.Duration.Companion.milliseconds
+import kotlin.time.TestTimeSource
+
 /**
  * MIT License
  *
- * Copyright (c) 2021 The Kroger Co. All rights reserved.
+ * Copyright (c) 2026 The Kroger Co. All rights reserved.
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -21,21 +32,6 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  */
-
-package com.kroger.telemetry
-
-import com.kroger.telemetry.tracing.NoOpTraceRecorder
-import com.kroger.telemetry.tracing.Span
-import com.kroger.telemetry.tracing.SpanImpl
-import org.junit.jupiter.api.Assertions.assertEquals
-import org.junit.jupiter.api.Assertions.assertNotEquals
-import org.junit.jupiter.api.Assertions.assertNull
-import org.junit.jupiter.api.Assertions.assertSame
-import org.junit.jupiter.api.Assertions.assertTrue
-import org.junit.jupiter.api.Test
-import kotlin.time.Duration.Companion.milliseconds
-import kotlin.time.TestTimeSource
-
 internal class SpanTest {
     private fun createSpan(
         name: String = "test",

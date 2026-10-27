@@ -1,7 +1,7 @@
 /**
  * MIT License
  *
- * Copyright (c) 2021 The Kroger Co. All rights reserved.
+ * Copyright (c) 2026 The Kroger Co. All rights reserved.
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -22,14 +22,8 @@
  * SOFTWARE.
  */
 
-package com.kroger.telemetry
+package com.kroger.telemetry.tracing
 
-import com.kroger.telemetry.tracing.NoOpNetworkTraceContext
-import com.kroger.telemetry.tracing.NoOpTraceRecorder
-import com.kroger.telemetry.tracing.SpanImpl
-import com.kroger.telemetry.tracing.SpanStatus
-import com.kroger.telemetry.tracing.createNetworkTraceContext
-import com.kroger.telemetry.tracing.step
 import com.kroger.telemetry.util.FakeTraceRecorder
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.test.runTest
@@ -42,6 +36,7 @@ import org.junit.jupiter.api.Test
 import java.util.concurrent.CyclicBarrier
 import java.util.concurrent.atomic.AtomicReference
 import kotlin.test.assertFailsWith
+import kotlin.time.Duration
 import kotlin.time.Duration.Companion.milliseconds
 import kotlin.time.TestTimeSource
 
@@ -198,7 +193,7 @@ internal class TraceTest {
         val childHandle = NoOpTraceRecorder.startSpan("child", parent = handle)
         NoOpTraceRecorder.setAttribute(handle, "key", "value")
         NoOpTraceRecorder.addEvent(handle, "event")
-        NoOpTraceRecorder.endSpan(handle, SpanStatus.Success, kotlin.time.Duration.ZERO)
+        NoOpTraceRecorder.endSpan(handle, SpanStatus.Success, Duration.ZERO)
 
         assertNull(NoOpTraceRecorder.getNetworkTraceContext(childHandle))
     }

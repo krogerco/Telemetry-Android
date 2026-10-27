@@ -1,7 +1,7 @@
 /**
  * MIT License
  *
- * Copyright (c) 2021 The Kroger Co. All rights reserved.
+ * Copyright (c) 2026 The Kroger Co. All rights reserved.
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -22,10 +22,8 @@
  * SOFTWARE.
  */
 
-package com.kroger.telemetry
+package com.kroger.telemetry.tracing
 
-import com.kroger.telemetry.tracing.CompositeTraceRecorder
-import com.kroger.telemetry.tracing.SpanStatus
 import com.kroger.telemetry.util.FakeTraceRecorder
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertFalse

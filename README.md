@@ -216,7 +216,7 @@ interface Relay {
 }
 ```
 
-Relays are user-defined, except for some common ones package that are packaged in the library. There should be separate relays defined for each method of handling data required for the pipeline. For example, there should be individual Relays for each of things like Logcat, Firebase, or other backends.
+Relays are consumer-defined, except for some common ones that are packaged in the library. There should be separate relays defined for each method of handling data required for the pipeline. For example, there should be individual Relays for each of things like Logcat, Firebase, or other backends.
 
 Relays will have events sent to them in the same coroutine scope that is injected into their telemeter. By default this scope will operate on `Dispatchers.Default`, but it is worth ensuring the `process` function switches context to a background thread if it is long-running or does any IO.
 
