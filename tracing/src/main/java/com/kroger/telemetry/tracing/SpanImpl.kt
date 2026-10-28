@@ -106,14 +106,21 @@ internal class SpanImpl(
     override fun setAttribute(
         key: String,
         value: Any?,
-    ) = recorder.setAttribute(handle, key, value)
+    ) {
+        inProgressSpan.attributes[key] = value
+        recorder.setAttribute(handle, key, value)
+    }
 
     /** Adds a timestamped event with the given [name] to this span via the recorder. */
-    override fun addEvent(name: String) = recorder.addEvent(handle, name)
+    override fun addEvent(name: String) {
+        inProgressSpan.attributes[name] = null
+        recorder.addEvent(handle, name)
+    }
 
     /** Returns a [NetworkTraceContext] wrapping the recorder's context, or [NoOpNetworkTraceContext] if unavailable. */
     override fun getNetworkTraceContext(): NetworkTraceContext {
         val tags = recorder.getNetworkTraceContexts(handle)
+        inProgressSpan.requestTags = tags
         return if (tags.isNotEmpty()) {
             object : NetworkTraceContext {
                 override val requestTags: Map<String, String> = tags
@@ -161,7 +168,8 @@ internal data class InProgressSpan(
     val spanId: String,
     val traceId: String,
     val startMark: TimeMark,
-    val attributes: Map<String, Any?> = emptyMap(),
+    val attributes: MutableMap<String, Any?> = mutableMapOf(),
+    var requestTags: Map<String, String> = emptyMap(),
     val parent: Span? = null,
 )
 
@@ -172,6 +180,7 @@ public data class CompletedSpan(
     val startMark: TimeMark,
     val duration: Duration,
     val attributes: Map<String, Any?> = emptyMap(),
+    val requestTags: Map<String, String> = emptyMap(),
     val children: List<CompletedSpan> = emptyList(),
     val parent: Span? = null,
 )
@@ -187,6 +196,7 @@ internal fun InProgressSpan.toCompletedSpan(
         startMark = startMark,
         duration = duration,
         attributes = attributes,
+        requestTags = requestTags,
         children = children,
         parent = parent,
     )
