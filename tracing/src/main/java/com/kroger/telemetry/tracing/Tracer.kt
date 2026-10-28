@@ -28,7 +28,6 @@ import com.kroger.telemetry.Telemeter
 import kotlin.time.TimeSource
 
 public interface Tracer {
-
     /** The [TraceRecorder] used to record span lifecycle events. Use [CompositeTraceRecorder] if you have multiple backends */
     public val traceRecorder: TraceRecorder
 
