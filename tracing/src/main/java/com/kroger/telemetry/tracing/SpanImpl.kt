@@ -73,6 +73,7 @@ internal class SpanImpl(
             spanId = spanId,
             traceId = traceId,
             startMark = startMark,
+            parent = parent,
         )
 
     internal var completedSpan: CompletedSpan? = null
