@@ -24,8 +24,6 @@
 
 package com.kroger.telemetry
 
-import com.kroger.telemetry.Telemeter.Companion.defaultSharedFlowConfig
-import com.kroger.telemetry.Telemeter.Companion.defaultTelemetryFlowConfig
 import com.kroger.telemetry.facet.Facet
 import com.kroger.telemetry.facet.FacetResolver
 import com.kroger.telemetry.facet.ThreadData
@@ -60,9 +58,6 @@ public interface Telemeter {
         event: Event,
         withFacets: List<Facet>? = null,
     )
-
-    /** Configuration for the event flow that propagates events to relays. See [defaultTelemetryFlowConfig] & [defaultSharedFlowConfig] */
-    public val flowConfig: EventFlowConfig
 
     /**
      * Used to configure the event flow that propagates events to relays.
@@ -153,6 +148,6 @@ public fun Telemeter.child(
         relays = relays,
         facets = facets,
         parent = this,
-        flowConfig = this.flowConfig,
-        facetResolvers = facetResolvers,
+        flowConfig = (this as? StandardTelemeter)?.flowConfig
+            ?: Telemeter.defaultTelemetryFlowConfig, facetResolvers = facetResolvers,
     )

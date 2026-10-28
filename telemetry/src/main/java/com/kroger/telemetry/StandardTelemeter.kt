@@ -42,7 +42,7 @@ internal class StandardTelemeter(
     private val facetResolvers: Map<Class<*>, FacetResolver>,
     private val facets: List<Facet>,
     private val parent: Telemeter?,
-    override val flowConfig: Telemeter.EventFlowConfig,
+    internal val flowConfig: Telemeter.EventFlowConfig,
 ) : Telemeter {
     private val coroutineScope = flowConfig.scope ?: CoroutineScope(Dispatchers.Default)
     private val events =
