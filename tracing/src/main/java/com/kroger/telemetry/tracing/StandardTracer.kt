@@ -29,7 +29,6 @@ import java.util.UUID
 import kotlin.time.TimeSource
 
 internal class StandardTracer(
-    override val telemeter: Telemeter,
     override val traceRecorder: TraceRecorder,
     override val timeSource: TimeSource,
 ) : Tracer {
