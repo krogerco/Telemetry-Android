@@ -24,7 +24,6 @@
 
 package com.kroger.telemetry.tracing
 
-import com.kroger.telemetry.Telemeter
 import java.util.UUID
 import kotlin.time.TimeSource
 
