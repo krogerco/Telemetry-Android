@@ -148,6 +148,6 @@ public fun Telemeter.child(
         relays = relays,
         facets = facets,
         parent = this,
-        flowConfig = (this as? StandardTelemeter)?.flowConfig
-            ?: Telemeter.defaultTelemetryFlowConfig, facetResolvers = facetResolvers,
+        flowConfig = (this as? StandardTelemeter)?.flowConfig ?: Telemeter.defaultTelemetryFlowConfig,
+        facetResolvers = facetResolvers,
     )

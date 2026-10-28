@@ -837,7 +837,7 @@ internal class TelemeterTest {
                             ResolvedFacet(unresolvedFacet.badNumber * 2),
                             ResolvedFacet(
                                 unresolvedFacet.badNumber * unresolvedFacet.badNumber *
-                                        unresolvedFacet.badNumber,
+                                    unresolvedFacet.badNumber,
                             ),
                         )
                     } else {
