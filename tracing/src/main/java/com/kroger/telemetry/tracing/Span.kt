@@ -79,7 +79,7 @@ public interface Span {
     public fun end(
         status: SpanStatus = SpanStatus.Success,
         error: Throwable? = null,
-    )
+    ): CompletedSpan
 
     /**
      * Returns a [NetworkTraceContext] for distributed trace propagation.

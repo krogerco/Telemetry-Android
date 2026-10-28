@@ -24,18 +24,16 @@
 
 package com.kroger.telemetry
 
+import com.kroger.telemetry.Telemeter.Companion.defaultSharedFlowConfig
+import com.kroger.telemetry.Telemeter.Companion.defaultTelemetryFlowConfig
 import com.kroger.telemetry.facet.Facet
 import com.kroger.telemetry.facet.FacetResolver
 import com.kroger.telemetry.facet.ThreadData
 import com.kroger.telemetry.facet.UnresolvedFacet
-import com.kroger.telemetry.tracing.NoOpTraceRecorder
-import com.kroger.telemetry.tracing.Trace
-import com.kroger.telemetry.tracing.TraceRecorder
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.channels.BufferOverflow
 import kotlinx.coroutines.flow.MutableSharedFlow
-import kotlin.time.TimeSource
 
 /**
  * Telemeters are the top-level component for controlling an [Event] logging pipeline.
@@ -65,28 +63,6 @@ public interface Telemeter {
 
     /** Configuration for the event flow that propagates events to relays. See [defaultTelemetryFlowConfig] & [defaultSharedFlowConfig] */
     public val flowConfig: EventFlowConfig
-
-    /** The [TraceRecorder] used to record span lifecycle events. Use [com.kroger.telemetry.tracing.CompositeTraceRecorder] if you have multiple backends */
-    public val traceRecorder: TraceRecorder
-
-    /** The [TimeSource] used to measure span durations. */
-    public val timeSource: TimeSource
-
-    /**
-     * Starts a new [Trace] with the given [name] and optional [attributes].
-     *
-     * Creates a root span via the [traceRecorder] and wraps it in a [Trace] that
-     * owns a unique trace ID. The caller is responsible for ending the trace
-     * (via [Trace.end]) when the traced operation completes.
-     *
-     * @param name Human-readable name describing the operation being traced.
-     * @param attributes Initial key-value attributes to attach to the root span.
-     * @return A new [Trace] representing the started operation.
-     */
-    public fun trace(
-        name: String,
-        attributes: Map<String, Any?> = emptyMap(),
-    ): Trace
 
     /**
      * Used to configure the event flow that propagates events to relays.
@@ -127,8 +103,6 @@ public interface Telemeter {
             facets: List<Facet> = listOf(),
             facetResolvers: Map<Class<*>, FacetResolver> = mapOf(),
             flowConfig: EventFlowConfig = defaultTelemetryFlowConfig,
-            traceRecorder: TraceRecorder = NoOpTraceRecorder,
-            timeSource: TimeSource = TimeSource.Monotonic,
         ): Telemeter =
             StandardTelemeter(
                 relays = relays,
@@ -136,8 +110,6 @@ public interface Telemeter {
                 facets = facets,
                 parent = null,
                 flowConfig = flowConfig,
-                traceRecorder = traceRecorder,
-                timeSource = timeSource,
             )
 
         /**
@@ -183,6 +155,4 @@ public fun Telemeter.child(
         parent = this,
         flowConfig = this.flowConfig,
         facetResolvers = facetResolvers,
-        traceRecorder = this.traceRecorder,
-        timeSource = this.timeSource,
     )

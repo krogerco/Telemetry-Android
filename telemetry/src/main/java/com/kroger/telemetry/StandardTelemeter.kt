@@ -30,26 +30,19 @@ import com.kroger.telemetry.facet.Failure
 import com.kroger.telemetry.facet.RelayFailure
 import com.kroger.telemetry.facet.ThreadData
 import com.kroger.telemetry.facet.UnresolvedFacet
-import com.kroger.telemetry.tracing.SpanImpl
-import com.kroger.telemetry.tracing.Trace
-import com.kroger.telemetry.tracing.TraceRecorder
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.launchIn
 import kotlinx.coroutines.flow.onEach
 import kotlinx.coroutines.launch
-import java.util.UUID
-import kotlin.time.TimeSource
 
 internal class StandardTelemeter(
     relays: List<Relay>,
     private val facetResolvers: Map<Class<*>, FacetResolver>,
     private val facets: List<Facet>,
     private val parent: Telemeter?,
-    override val traceRecorder: TraceRecorder,
     override val flowConfig: Telemeter.EventFlowConfig,
-    override val timeSource: TimeSource,
 ) : Telemeter {
     private val coroutineScope = flowConfig.scope ?: CoroutineScope(Dispatchers.Default)
     private val events =
@@ -118,11 +111,11 @@ internal class StandardTelemeter(
         relay: Relay,
     ): Boolean =
         (relayFailure.sourceRelay === relay) ||
-            (
-                relayFailure.cause?.let {
-                    relayIsSourceOfFailure(it, relay)
-                } ?: false
-            )
+                (
+                        relayFailure.cause?.let {
+                            relayIsSourceOfFailure(it, relay)
+                        } ?: false
+                        )
 
     override fun record(
         event: Event,
@@ -143,15 +136,6 @@ internal class StandardTelemeter(
         }
 
         parent?.record(additionallyFacetedEvent)
-    }
-
-    override fun trace(
-        name: String,
-        attributes: Map<String, Any?>,
-    ): Trace {
-        val traceId = UUID.randomUUID().toString()
-        val handle = traceRecorder.startSpan(name, attributes)
-        return Trace(traceId, SpanImpl(handle, traceRecorder, timeSource, traceId, name, parent = null))
     }
 
     private fun resolveFacets(facets: List<Facet>): List<Facet> =

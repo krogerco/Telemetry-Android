@@ -65,7 +65,17 @@ internal class SpanImpl(
     override val spanId: String = UUID.randomUUID().toString()
     private val startMark: TimeMark = timeSource.markNow()
     private val lock = Any()
-    private var ended = false
+    private val childSpans = mutableListOf<SpanImpl>()
+
+    internal val inProgressSpan = InProgressSpan(
+        name = name,
+        spanId = spanId,
+        traceId = traceId,
+        startMark = startMark,
+    )
+
+    internal var completedSpan: CompletedSpan? = null
+        private set
 
     /**
      * The elapsed duration of this span, or `null` if [end] has not yet been called.
@@ -85,7 +95,10 @@ internal class SpanImpl(
         attributes: Map<String, Any?>,
     ): Span {
         val childHandle = recorder.startSpan(name, attributes, parent = handle)
-        return SpanImpl(childHandle, recorder, timeSource, traceId, name, parent = this)
+        val span = SpanImpl(childHandle, recorder, timeSource, traceId, name, parent = this)
+        childSpans.add(span)
+
+        return span
     }
 
     /** Sets an attribute on this span via the recorder. */
@@ -118,13 +131,59 @@ internal class SpanImpl(
     override fun end(
         status: SpanStatus,
         error: Throwable?,
-    ) {
+    ): CompletedSpan {
         val elapsed =
             synchronized(lock) {
-                if (ended) return
-                ended = true
-                startMark.elapsedNow().also { duration = it }
+                completedSpan?.let { return it } ?: run {
+                    startMark.elapsedNow().also {
+                        duration = it
+                        completedSpan = inProgressSpan.toCompletedSpan(
+                            duration = it,
+                            children = childSpans.map { child ->
+                                //TODO: Do we want to end dangling child spans?
+                                child.completedSpan ?: child.end(status, error)
+                            },
+                        )
+                    }
+                }
             }
         recorder.endSpan(handle, status, elapsed, error)
+
+        return completedSpan!!
     }
 }
+
+
+internal data class InProgressSpan(
+    val name: String,
+    val spanId: String,
+    val traceId: String,
+    val startMark: TimeMark,
+    val attributes: Map<String, Any?> = emptyMap(),
+    val parent: Span? = null,
+)
+
+public data class CompletedSpan(
+    val name: String,
+    val spanId: String,
+    val traceId: String,
+    val startMark: TimeMark,
+    val duration: Duration,
+    val attributes: Map<String, Any?> = emptyMap(),
+    val children: List<CompletedSpan> = emptyList(),
+    val parent: Span? = null,
+)
+
+internal fun InProgressSpan.toCompletedSpan(
+    duration: Duration,
+    children: List<CompletedSpan> = emptyList(),
+): CompletedSpan = CompletedSpan(
+    name = name,
+    spanId = spanId,
+    traceId = traceId,
+    startMark = startMark,
+    duration = duration,
+    attributes = attributes,
+    children = children,
+    parent = parent,
+)
