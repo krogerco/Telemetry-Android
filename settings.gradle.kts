@@ -1,7 +1,8 @@
-include(":telemetry")
 include(":android")
 include(":context-aware")
 include(":firebase")
+include(":telemetry")
+include(":tracing")
 include(":sample")
 
 rootProject.name = "telemetry"
