@@ -1,5 +1,6 @@
 [versions]
-androidGradlePlugin = "8.10.0"
+androidBcvBridge = "0.2.0"
+androidGradlePlugin = "9.5.0"
 androidJunit5Plugin = "1.12.0.0"
 androidMaterial = "1.12.0"
 androidxAppCompat = "1.7.0"
@@ -10,29 +11,32 @@ androidxTestEspresso = "3.6.1"
 androidxTestExtJunit = "1.2.1"
 androidxTestRules = "1.6.1"
 androidxTestRunner = "1.6.2"
-conventionPlugin = "2.0.0-alpha.4"
-dependencyAnalysis = "2.17.0"
+binaryCompatibilityValidator = "0.18.2"
+conventionPlugin = "2.1.1"
+dependencyAnalysis = "3.18.0"
+dependencyGuard = "0.5.0"
 firebaseBom = "32.8.0"
-gradleMavenPublishPlugin = "0.35.0" # any further upgrade requires Gradle 9
-gradleVersions = "0.51.0"
+gradleMavenPublishPlugin = "0.37.0" # any further upgrade requires Gradle 9
+gradleVersions = "0.66.0"
 javaxInject = "1"
-kgpCompileSdk = "35"
-kgpDagger = "2.56.1"
+kgpCompileSdk = "36"
+kgpDagger = "2.60.1"
 kgpAndroidDesugarJdkLibs = "2.1.5"
-kgpAndroidxComposeBom = "2025.05.00"
 kgpDokka = "2.0.0"
-kgpJdk = "17"
+kgpJdk = "24"
 kgpJvmTarget = "11"
 kgpJunit4 = "4.13.2"
 kgpJunitBom = "5.12.2"
+kgpKotlinApiVersion= "2.1"
+kgpKotlinLanguageVersion="2.1"
 kgpMinSdk = "24"
 kgpTargetSdk = "35"
 kotlin = "2.1.20"
 kotlinter = "5.0.2"
 kotlinxCoroutines = "1.10.2"
-kover = "0.9.1"
-ksp = "2.1.20-1.0.32"
-mockk = "1.14.2"
+kover = "0.9.11"
+ksp = "2.3.13"
+mockk = "1.14.11"
 
 [libraries]
 # android
@@ -68,6 +72,8 @@ androidx-test-ext-junitKtx = { module = "androidx.test.ext:junit-ktx", version.r
 [plugins]
 android-application = { id = "com.android.application", version.ref = "androidGradlePlugin" }
 android-junit5 = { id = "de.mannodermaus.android-junit5", version.ref = "androidJunit5Plugin" }
+androidBcvBridge = { id = "io.github.tjokinen.android-bcv-bridge", version.ref = "androidBcvBridge" }
+binaryCompatibilityValidator = { id = "org.jetbrains.kotlinx.binary-compatibility-validator", version.ref = "binaryCompatibilityValidator" }
 compose = { id = "org.jetbrains.kotlin.plugin.compose", version.ref = "kotlin" }
 conventions-androidApplication = { id = "com.kroger.gradle.android-application-conventions", version.ref = "conventionPlugin" }
 conventions-publishedAndroidLibrary = { id = "com.kroger.gradle.published-android-library-conventions", version.ref = "conventionPlugin" }
@@ -75,6 +81,7 @@ conventions-publishedKotlinLibrary = { id = "com.kroger.gradle.published-kotlin-
 conventions-root = { id = "com.kroger.gradle.root", version.ref = "conventionPlugin" }
 dagger-hilt = { id = "com.google.dagger.hilt.android", version.ref = "kgpDagger" }
 dependencyAnalysis = { id = "com.autonomousapps.dependency-analysis", version.ref = "dependencyAnalysis" }
+dependencyGuard = { id = "com.dropbox.dependency-guard", version.ref = "dependencyGuard" }
 dokka = { id = "org.jetbrains.dokka", version.ref = "kgpDokka" }
 gradleVersions = { id = "com.github.ben-manes.versions", version.ref = "gradleVersions" }
 kotlinter = { id = "org.jmailen.kotlinter", version.ref = "kotlinter" }
