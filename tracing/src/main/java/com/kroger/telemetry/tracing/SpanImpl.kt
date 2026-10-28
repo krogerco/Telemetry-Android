@@ -67,12 +67,13 @@ internal class SpanImpl(
     private val lock = Any()
     private val childSpans = mutableListOf<SpanImpl>()
 
-    internal val inProgressSpan = InProgressSpan(
-        name = name,
-        spanId = spanId,
-        traceId = traceId,
-        startMark = startMark,
-    )
+    internal val inProgressSpan =
+        InProgressSpan(
+            name = name,
+            spanId = spanId,
+            traceId = traceId,
+            startMark = startMark,
+        )
 
     internal var completedSpan: CompletedSpan? = null
         private set
@@ -137,13 +138,15 @@ internal class SpanImpl(
                 completedSpan?.let { return it } ?: run {
                     startMark.elapsedNow().also {
                         duration = it
-                        completedSpan = inProgressSpan.toCompletedSpan(
-                            duration = it,
-                            children = childSpans.map { child ->
-                                //TODO: Do we want to end dangling child spans?
-                                child.completedSpan ?: child.end(status, error)
-                            },
-                        )
+                        completedSpan =
+                            inProgressSpan.toCompletedSpan(
+                                duration = it,
+                                children =
+                                    childSpans.map { child ->
+                                        // TODO: Do we want to end dangling child spans?
+                                        child.completedSpan ?: child.end(status, error)
+                                    },
+                            )
                     }
                 }
             }
@@ -152,7 +155,6 @@ internal class SpanImpl(
         return completedSpan!!
     }
 }
-
 
 internal data class InProgressSpan(
     val name: String,
@@ -177,13 +179,14 @@ public data class CompletedSpan(
 internal fun InProgressSpan.toCompletedSpan(
     duration: Duration,
     children: List<CompletedSpan> = emptyList(),
-): CompletedSpan = CompletedSpan(
-    name = name,
-    spanId = spanId,
-    traceId = traceId,
-    startMark = startMark,
-    duration = duration,
-    attributes = attributes,
-    children = children,
-    parent = parent,
-)
+): CompletedSpan =
+    CompletedSpan(
+        name = name,
+        spanId = spanId,
+        traceId = traceId,
+        startMark = startMark,
+        duration = duration,
+        attributes = attributes,
+        children = children,
+        parent = parent,
+    )

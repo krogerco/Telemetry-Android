@@ -111,11 +111,11 @@ internal class StandardTelemeter(
         relay: Relay,
     ): Boolean =
         (relayFailure.sourceRelay === relay) ||
-                (
-                        relayFailure.cause?.let {
-                            relayIsSourceOfFailure(it, relay)
-                        } ?: false
-                        )
+            (
+                relayFailure.cause?.let {
+                    relayIsSourceOfFailure(it, relay)
+                } ?: false
+            )
 
     override fun record(
         event: Event,
