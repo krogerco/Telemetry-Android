@@ -1,0 +1,10 @@
+public abstract interface class com/kroger/telemetry/contextaware/ContextAwareFacet : com/kroger/telemetry/facet/UnresolvedFacet {
+	public abstract fun resolve (Landroid/content/Context;)Lcom/kroger/telemetry/facet/Facet;
+}
+
+public final class com/kroger/telemetry/contextaware/ContextAwareFacetResolver : com/kroger/telemetry/facet/FacetResolver {
+	public fun <init> (Landroid/content/Context;)V
+	public fun getType ()Ljava/lang/Class;
+	public fun resolve (Lcom/kroger/telemetry/facet/UnresolvedFacet;)Ljava/util/List;
+}
+
