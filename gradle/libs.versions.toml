@@ -41,7 +41,7 @@ mockk = "1.14.11"
 [libraries]
 # android
 android-material = { module = "com.google.android.material:material", version.ref = "androidMaterial" }
-androidx-constrainlayout = { module = "androidx.constraintlayout:constraintlayout", version.ref = "androidxConstraintLayout" }
+androidx-constraintlayout = { module = "androidx.constraintlayout:constraintlayout", version.ref = "androidxConstraintLayout" }
 androidx-coreKtx = { module = "androidx.core:core-ktx", version.ref = "androidxCore" }
 androidx-appcompat = { module = "androidx.appcompat:appcompat", version.ref = "androidxAppCompat" }
 

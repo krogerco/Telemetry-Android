@@ -29,7 +29,7 @@ dependencies {
     implementation(project(":context-aware"))
 
     implementation(libs.androidx.appcompat)
-    implementation(libs.androidx.constrainlayout)
+    implementation(libs.androidx.constraintlayout)
     implementation(libs.androidx.coreKtx)
     implementation(libs.kotlinx.coroutinesCore)
     implementation(libs.android.material)
