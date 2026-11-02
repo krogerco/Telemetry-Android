@@ -1,4 +1,5 @@
 import com.kroger.gradle.config.junit5
+import org.jetbrains.kotlin.gradle.dsl.JvmDefaultMode
 
 plugins {
     alias(libs.plugins.conventions.publishedKotlinLibrary)
@@ -6,6 +7,9 @@ plugins {
 
 kotlin {
     coreLibrariesVersion = libs.versions.kotlin.get()
+    compilerOptions {
+        jvmDefault = JvmDefaultMode.NO_COMPATIBILITY
+    }
 }
 
 kover {

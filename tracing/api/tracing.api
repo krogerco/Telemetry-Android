@@ -25,11 +25,8 @@ public abstract interface class com/kroger/telemetry/tracing/Span {
 	public abstract fun setAttribute (Ljava/lang/String;Ljava/lang/Object;)V
 	public abstract fun setStatus (Lcom/kroger/telemetry/tracing/SpanStatus;)V
 	public abstract fun startChild (Ljava/lang/String;Ljava/util/Map;)Lcom/kroger/telemetry/tracing/Span;
-	public abstract fun startHttpRequest (Ljava/lang/String;Ljava/lang/String;Ljava/util/Map;)Lcom/kroger/telemetry/tracing/HttpRequestSpan;
-}
-
-public final class com/kroger/telemetry/tracing/Span$DefaultImpls {
 	public static synthetic fun startChild$default (Lcom/kroger/telemetry/tracing/Span;Ljava/lang/String;Ljava/util/Map;ILjava/lang/Object;)Lcom/kroger/telemetry/tracing/Span;
+	public abstract fun startHttpRequest (Ljava/lang/String;Ljava/lang/String;Ljava/util/Map;)Lcom/kroger/telemetry/tracing/HttpRequestSpan;
 	public static synthetic fun startHttpRequest$default (Lcom/kroger/telemetry/tracing/Span;Ljava/lang/String;Ljava/lang/String;Ljava/util/Map;ILjava/lang/Object;)Lcom/kroger/telemetry/tracing/HttpRequestSpan;
 }
 
@@ -66,14 +63,9 @@ public final class com/kroger/telemetry/tracing/SpanHelpersKt {
 }
 
 public abstract interface class com/kroger/telemetry/tracing/SpanListener {
-	public abstract fun onEnd (Ljava/lang/Object;Lcom/kroger/telemetry/tracing/SpanData;)V
+	public fun onEnd (Ljava/lang/Object;Lcom/kroger/telemetry/tracing/SpanData;)V
 	public abstract fun onStart (Lcom/kroger/telemetry/tracing/SpanStart;Ljava/lang/Object;)Ljava/lang/Object;
-	public abstract fun propagationHeaders (Ljava/lang/Object;)Ljava/util/Map;
-}
-
-public final class com/kroger/telemetry/tracing/SpanListener$DefaultImpls {
-	public static fun onEnd (Lcom/kroger/telemetry/tracing/SpanListener;Ljava/lang/Object;Lcom/kroger/telemetry/tracing/SpanData;)V
-	public static fun propagationHeaders (Lcom/kroger/telemetry/tracing/SpanListener;Ljava/lang/Object;)Ljava/util/Map;
+	public fun propagationHeaders (Ljava/lang/Object;)Ljava/util/Map;
 }
 
 public final class com/kroger/telemetry/tracing/SpanStart {
