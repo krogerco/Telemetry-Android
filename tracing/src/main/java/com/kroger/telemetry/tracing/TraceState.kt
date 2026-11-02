@@ -114,12 +114,10 @@ internal class TraceState(
         rawUrl: String?,
         pending: PendingDiagnostics,
     ): Span {
-        // A doomed HTTP start never runs the sanitizer. The checks repeat below, because the parent can still end,
-        // or the limit fill, while the sanitizer runs.
-        if (rawUrl != null) {
-            val inert = locked { inertSpanIfRejectedLocked(parent, pending) }
-            if (inert != null) return inert
-        }
+        // A doomed start never runs the sanitizer or reads the caller's map, which could be slow or blocking. The checks
+        // repeat below, because the parent can still end, or the limit fill, while they run.
+        val rejected = locked { inertSpanIfRejectedLocked(parent, pending) }
+        if (rejected != null) return rejected
         // Outside the lock: the sanitizer is foreign code, and so is the caller's Map implementation.
         val url = rawUrl?.let { core.sanitize(it, pending) }
         val initialAttributes = readInitialAttributes(attributes, pending)

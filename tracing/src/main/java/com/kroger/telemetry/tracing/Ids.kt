@@ -24,10 +24,11 @@
 
 package com.kroger.telemetry.tracing
 
+import java.security.SecureRandom
 import java.util.Random
 
 /**
- * W3C-format IDs from a shared [Random].
+ * W3C-format IDs from a shared [SecureRandom].
  *
  * Generated IDs are never all zeros, which W3C reserves as invalid; only inert spans use the all zero IDs.
  */
@@ -40,7 +41,7 @@ internal object Ids {
 
     private val HEX = "0123456789abcdef".toCharArray()
 
-    private val sharedRandom = Random()
+    private val sharedRandom: Random by lazy { SecureRandom() }
 
     /** 32 lowercase hex chars. */
     fun newTraceId(random: Random = sharedRandom): String {

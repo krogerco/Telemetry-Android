@@ -39,6 +39,7 @@ import org.junit.jupiter.api.Assertions.assertNull
 import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.assertThrows
+import java.util.AbstractMap.SimpleEntry
 
 internal class AttributesAndLimitsTest {
     private val telemeter = FakeTelemeter()
@@ -504,7 +505,7 @@ internal class AttributesAndLimitsTest {
     @Test
     fun `GIVEN a Java map with a null key WHEN passed as initial attributes THEN the entry is skipped and the block runs`() {
         val javaMap =
-            java.util.HashMap<String?, Any?>().apply {
+            HashMap<String?, Any?>().apply {
                 put(null, "value")
                 put("ok", 1)
             }
@@ -527,7 +528,7 @@ internal class AttributesAndLimitsTest {
 
                         override fun iterator() =
                             iterator {
-                                yield(java.util.AbstractMap.SimpleEntry("ok", 1L as Any?))
+                                yield(SimpleEntry("ok", 1L as Any?))
                                 throw ConcurrentModificationException("secret-token")
                             }
                     }
@@ -567,7 +568,7 @@ internal class AttributesAndLimitsTest {
                             iterator {
                                 repeat(size) {
                                     entriesRead++
-                                    yield(java.util.AbstractMap.SimpleEntry("k$it", 'c' as Any?))
+                                    yield(SimpleEntry("k$it", 'c' as Any?))
                                 }
                             }
                     }
@@ -682,7 +683,7 @@ internal class AttributesAndLimitsTest {
                         override fun iterator() =
                             iterator {
                                 var i = 0
-                                while (true) yield(java.util.AbstractMap.SimpleEntry("k${i++}", 'c' as Any?))
+                                while (true) yield(SimpleEntry("k${i++}", 'c' as Any?))
                             }
                     }
             }
@@ -719,8 +720,8 @@ internal class AttributesAndLimitsTest {
                             iterator {
                                 repeat(
                                     TraceLimits.MAX_INITIAL_ENTRIES_READ,
-                                ) { yield(java.util.AbstractMap.SimpleEntry("n$it", null as Any?)) }
-                                yield(java.util.AbstractMap.SimpleEntry("valid", 1 as Any?))
+                                ) { yield(SimpleEntry("n$it", null as Any?)) }
+                                yield(SimpleEntry("valid", 1 as Any?))
                             }
                     }
             }

@@ -29,6 +29,7 @@ import com.kroger.telemetry.tracing.TracingDiagnostic.Kinds.LIMIT_EXCEEDED
 import com.kroger.telemetry.tracing.util.FakeTelemeter
 import com.kroger.telemetry.tracing.util.TIMEOUT_SECONDS
 import org.junit.jupiter.api.Assertions.assertEquals
+import org.junit.jupiter.api.Assertions.assertFalse
 import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.Test
 import java.util.concurrent.CountDownLatch
@@ -83,6 +84,36 @@ internal class SpanStartRejectionTest {
         assertEquals(0, sanitizerCalls)
         val diagnostic = telemeter.diagnostics.single()
         assertEquals(LIMIT_EXCEEDED, diagnostic.kind)
+        assertTrue(diagnostic.message.startsWith("Span limit"), diagnostic.message)
+        assertEquals(1, telemeter.traces.single().droppedSpanCount)
+    }
+
+    @Test
+    fun `GIVEN an ended parent WHEN a child starts with an attribute map THEN the map is never read and nothing is reported`() {
+        val root = tracer.startTrace("root")
+        val parent = root.startChild("parent")
+        parent.end()
+        val attributes = TouchTrackingMap()
+
+        val child = parent.startChild("child", attributes)
+
+        assertEquals(Ids.INVALID_SPAN_ID, child.spanId)
+        assertFalse(attributes.touched, "the caller's map was read for a rejected start")
+        assertTrue(telemeter.diagnostics.isEmpty())
+    }
+
+    @Test
+    fun `GIVEN a full trace WHEN a child starts with an attribute map THEN the map is never read and only the drop is reported`() {
+        val root = tracer.startTrace("root")
+        repeat(TraceLimits.MAX_SPANS - 1) { root.startChild("child") }
+        val attributes = TouchTrackingMap()
+
+        val child = root.startChild("overflow", attributes)
+        root.end()
+
+        assertEquals(Ids.INVALID_SPAN_ID, child.spanId)
+        assertFalse(attributes.touched, "the caller's map was read for a rejected start")
+        val diagnostic = telemeter.diagnostics.single()
         assertTrue(diagnostic.message.startsWith("Span limit"), diagnostic.message)
         assertEquals(1, telemeter.traces.single().droppedSpanCount)
     }
@@ -168,5 +199,23 @@ internal class SpanStartRejectionTest {
                 .root.attributes.size,
         )
         assertEquals(1, telemeter.traces.single().droppedSpanCount)
+    }
+
+    /** An empty attribute map that records whether anything looked at it. */
+    private class TouchTrackingMap : AbstractMap<String, Any?>() {
+        var touched = false
+            private set
+
+        override val entries: Set<Map.Entry<String, Any?>>
+            get() {
+                touched = true
+                return emptySet()
+            }
+
+        override val size: Int
+            get() {
+                touched = true
+                return 0
+            }
     }
 }

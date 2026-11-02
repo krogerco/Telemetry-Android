@@ -43,6 +43,7 @@ import java.util.concurrent.TimeUnit
 import java.util.concurrent.atomic.AtomicBoolean
 import java.util.concurrent.atomic.AtomicReference
 import kotlin.concurrent.thread
+import kotlin.time.Duration
 import kotlin.time.Duration.Companion.milliseconds
 
 internal class TraceLifecycleTest {
@@ -416,7 +417,7 @@ internal class TraceLifecycleTest {
             assertTrue(trace.spans.drop(1).all { span -> span.parentSpanId in ids })
             // Every exported span is closed: an inert start never appears, and nothing open is left behind.
             assertTrue(ids.none { it == Ids.INVALID_SPAN_ID })
-            assertTrue(trace.spans.all { it.duration >= kotlin.time.Duration.ZERO })
+            assertTrue(trace.spans.all { it.duration >= Duration.ZERO })
             assertEquals(1, telemeter.events.size)
         }
     }

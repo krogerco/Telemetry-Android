@@ -41,6 +41,7 @@ import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.assertThrows
 import java.io.IOException
+import kotlin.time.Duration.Companion.milliseconds
 
 internal class StatusAndHelpersTest {
     private val telemeter = FakeTelemeter()
@@ -87,7 +88,7 @@ internal class StatusAndHelpersTest {
         runTest {
             assertThrows<TimeoutCancellationException> {
                 tracer.trace("root") { root ->
-                    withTimeout(10) {
+                    withTimeout(10.milliseconds) {
                         root.child("slow") { awaitCancellation() }
                     }
                 }

@@ -44,6 +44,7 @@ import org.junit.jupiter.api.Assertions.assertNull
 import org.junit.jupiter.api.Assertions.assertSame
 import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.Test
+import java.util.AbstractMap.SimpleEntry
 import java.util.concurrent.CopyOnWriteArrayList
 import java.util.concurrent.CountDownLatch
 import java.util.concurrent.atomic.AtomicReference
@@ -135,7 +136,7 @@ internal class SpanListenerTest {
 
         val event = telemeter.events.single { it.facets.any { facet -> facet is TracingDiagnostic } }
         val diagnostic = event.facets.filterIsInstance<TracingDiagnostic>().single()
-        val failure = event.facets.filterIsInstance<com.kroger.telemetry.facet.Failure>().single()
+        val failure = event.facets.filterIsInstance<Failure>().single()
         val recorded = listOf(assertNotNull(diagnostic.throwable), assertNotNull(failure.throwable))
         for (thrown in recorded) {
             // Every field a crash reporter reads: the message (and its localized form), causes, suppressed, rendering.
@@ -639,7 +640,7 @@ internal class SpanListenerTest {
 
                             override fun iterator() =
                                 iterator<Map.Entry<String, String>> {
-                                    yield(java.util.AbstractMap.SimpleEntry("x-partial", "leaked"))
+                                    yield(SimpleEntry("x-partial", "leaked"))
                                     throw ConcurrentModificationException()
                                 }
                         }

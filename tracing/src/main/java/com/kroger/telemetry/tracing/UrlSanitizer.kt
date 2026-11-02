@@ -24,6 +24,7 @@
 
 package com.kroger.telemetry.tracing
 
+import java.io.ByteArrayOutputStream
 import java.util.Collections
 
 /**
@@ -153,7 +154,7 @@ private fun redactParameter(
  */
 private fun decodeName(name: String): String {
     if ('%' !in name && '+' !in name) return name
-    val bytes = java.io.ByteArrayOutputStream(name.length)
+    val bytes = ByteArrayOutputStream(name.length)
     var i = 0
     while (i < name.length) {
         when (val c = name[i]) {
@@ -161,6 +162,7 @@ private fun decodeName(name: String): String {
                 bytes.write(' '.code)
                 i++
             }
+
             '%' -> {
                 val hi = name.getOrNull(i + 1)?.asciiHexDigit()
                 val lo = name.getOrNull(i + 2)?.asciiHexDigit()
@@ -168,6 +170,7 @@ private fun decodeName(name: String): String {
                 bytes.write(hi * 16 + lo)
                 i += 3
             }
+
             else -> {
                 // A surrogate pair is encoded together, so non-BMP characters round-trip.
                 val end = if (c.isHighSurrogate() && i + 1 < name.length && name[i + 1].isLowSurrogate()) i + 2 else i + 1
@@ -195,7 +198,10 @@ private fun stripUserInfoQueryAndFragment(url: String): String {
 private fun authorityRange(url: String): IntRange? {
     val start =
         when {
-            url.startsWith("//") -> 2
+            url.startsWith("//") -> {
+                2
+            }
+
             else -> {
                 val schemeEnd = url.indexOf("://")
                 if (schemeEnd <= 0 || !isScheme(url, schemeEnd)) return null

@@ -90,9 +90,17 @@ public inline fun <T> Span.child(
 internal fun Span.applyThrowable(throwable: Throwable) {
     if (this !is SpanImpl) return
     when (throwable) {
-        is TimeoutCancellationException -> applyThrown(SpanStatus.Error("timeout"), throwable)
-        is CancellationException -> applyThrown(SpanStatus.Cancelled, throwable = null)
+        is TimeoutCancellationException -> {
+            applyThrown(SpanStatus.Error("timeout"), throwable)
+        }
+
+        is CancellationException -> {
+            applyThrown(SpanStatus.Cancelled, throwable = null)
+        }
+
         // The class name only, never the message, which can carry URLs or personal data.
-        else -> applyThrown(SpanStatus.Error(throwable.javaClass.simpleName.ifEmpty { throwable.javaClass.name }), throwable)
+        else -> {
+            applyThrown(SpanStatus.Error(throwable.javaClass.simpleName.ifEmpty { throwable.javaClass.name }), throwable)
+        }
     }
 }
