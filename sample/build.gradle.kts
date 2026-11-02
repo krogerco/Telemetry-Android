@@ -20,6 +20,12 @@ android {
     }
 }
 
+kotlin {
+    compilerOptions {
+        optIn.add("com.kroger.telemetry.tracing.ExperimentalTracingApi")
+    }
+}
+
 tasks.withType<JavaCompile> {
     options.compilerArgs.add("-Xlint:deprecation")
 }
@@ -27,6 +33,7 @@ tasks.withType<JavaCompile> {
 dependencies {
     implementation(project(":android"))
     implementation(project(":context-aware"))
+    implementation(project(":tracing"))
 
     implementation(libs.androidx.appcompat)
     implementation(libs.androidx.constraintlayout)
