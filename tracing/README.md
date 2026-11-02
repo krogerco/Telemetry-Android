@@ -8,7 +8,7 @@ and any `Relay` can export it.
 
 > **Experimental.** Every tracing type requires opting in to `@ExperimentalTracingApi`. The API and its behaviour
 > (defaults, limits, status rules) may change between releases, but never silently: every breaking change is listed
-> in the release notes with migration guidance. See [Compatibility](#compatibility).
+> in the release notes with migration guidance.
 
 - [Getting started](#getting-started)
 - [Writing traces](#writing-traces)
@@ -16,15 +16,12 @@ and any `Relay` can export it.
     - [Parallel work](#parallel-work)
     - [Status](#status)
     - [Attributes and events](#attributes-and-events)
-    - [Passing spans through your layers](#passing-spans-through-your-layers)
+    - [Untraced Spans](#untraced-spans)
     - [HTTP requests](#http-requests)
 - [Exporting traces](#exporting-traces)
 - [Limits](#limits)
 - [Privacy](#privacy)
 - [Diagnostics](#diagnostics)
-- [Testing](#testing)
-- [Realtime listeners (for vendor adapters)](#realtime-listeners-for-vendor-adapters)
-- [Compatibility](#compatibility)
 
 ---
 
@@ -211,8 +208,13 @@ An HTTP span is always a child: a request with no parent span isn't traced. The 
 Its rules: tracing never changes the request's outcome, `proceed` runs exactly once, the span always ends, and
 headers already on the request are never overwritten.
 
-`propagationHeaders()` returns the headers that [realtime listeners](#realtime-listeners-for-vendor-adapters) want on
+`propagationHeaders()` returns the headers that realtime listeners want on
 the request. With no listeners it's empty.
+
+Realtime listeners are for vendor adapters that must be driven while the work happens. An adapter implements
+`SpanListener` and registers it with `Tracer.Builder.listeners`, which requires opting in to `@RealtimeTracingApi`.
+The `SpanListener` KDoc documents the callback contract: when each callback runs, what state the tracer keeps for you,
+and how exceptions are handled.
 
 ---
 
@@ -280,7 +282,8 @@ code.
 
 | `TracingDiagnostic.kind` | Reported when |
 |---|---|
-| `listener_threw` | a [realtime listener](#realtime-listeners-for-vendor-adapters) threw. Also carries `Failure`. Both hold a redacted copy of the exception: its class name and stack trace, without its message or causes. |
+| `listener_threw` | a realtime listener threw. Also carries `Failure`. Both hold a redacted copy of the exception: its class name and stack trace, without its message or causes. |
 | `sanitizer_threw` | a custom `UrlSanitizer` threw; the URL was omitted |
 | `attribute_dropped` | an attribute value had an unsupported type |
+| `attributes_unreadable` | the map of initial attributes threw while being read. Entries read before the failure are kept; the rest are lost. Also carries `Failure`. |
 | `limit_exceeded` | a [limit](#limits) dropped or truncated data |
