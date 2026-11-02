@@ -4,6 +4,10 @@ plugins {
     alias(libs.plugins.conventions.publishedKotlinLibrary)
 }
 
+kotlin {
+    coreLibrariesVersion = libs.versions.kotlin.get()
+}
+
 kover {
     currentProject {
         createVariant("default") {

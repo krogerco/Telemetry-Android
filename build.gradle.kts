@@ -1,12 +1,15 @@
 plugins {
     alias(libs.plugins.android.application) apply false
+    alias(libs.plugins.androidBcvBridge) apply false
     alias(libs.plugins.android.junit5) apply false
+    alias(libs.plugins.binaryCompatibilityValidator) apply false
     alias(libs.plugins.compose) apply false
     alias(libs.plugins.conventions.androidApplication) apply false
     alias(libs.plugins.conventions.publishedAndroidLibrary) apply false
     alias(libs.plugins.conventions.publishedKotlinLibrary) apply false
     alias(libs.plugins.conventions.root)
     alias(libs.plugins.dependencyAnalysis) apply false
+    alias(libs.plugins.dependencyGuard) apply false
     alias(libs.plugins.dokka)
     alias(libs.plugins.gradleVersions) apply false
     alias(libs.plugins.dagger.hilt) apply false

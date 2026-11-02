@@ -8,6 +8,10 @@ android {
     namespace = "com.kroger.telemetry.contextaware"
 }
 
+kotlin {
+    coreLibrariesVersion = libs.versions.kotlin.get()
+}
+
 kover {
     currentProject {
         createVariant("default") {

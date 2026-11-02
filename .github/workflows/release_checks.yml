@@ -1,0 +1,17 @@
+name: Release Checks
+
+on:
+  pull_request:
+
+jobs:
+  dependency_guard_api_checks:
+    name: 🛡️ Dependency Guard and API Checks
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v7
+
+      - uses: krogerco/Shared-CI-Action-Android/.github/actions/gradle-task@v1
+        with:
+          gradle_command: 'dependencyGuard apiCheck releaseApiCheck --continue'
+          java_version: 24
