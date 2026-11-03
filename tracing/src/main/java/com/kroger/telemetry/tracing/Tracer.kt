@@ -60,7 +60,7 @@ public class Tracer internal constructor(
 
         /** Realtime listeners, called in list order. Copied when [build] runs. */
         @RealtimeTracingApi
-        public val listeners: MutableList<SpanListener<*>> = ArrayList()
+        public val listeners: MutableList<SpanListener<*>> = mutableListOf()
 
         /** Only this library's tests replace the clock. */
         internal var clock: TraceClock = TraceClock.System

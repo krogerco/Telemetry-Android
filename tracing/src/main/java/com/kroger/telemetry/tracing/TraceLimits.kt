@@ -192,7 +192,7 @@ internal fun readInitialAttributes(
     attributes: Map<String, Any?>,
     pending: PendingDiagnostics,
 ): InitialAttributes {
-    val entries = ArrayList<NormalizedAttribute>()
+    val entries = mutableListOf<NormalizedAttribute>()
     var read = 0
     var unread = 0
     try {

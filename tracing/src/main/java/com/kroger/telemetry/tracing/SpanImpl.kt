@@ -49,8 +49,8 @@ internal open class SpanImpl(
 
     /** Set by [setStatus] or a helper. Null means unset: the status is derived when the span closes. */
     private var explicitStatus: SpanStatus? = null
-    private val attributes = LinkedHashMap<String, Any>()
-    private val events = ArrayList<SpanEvent>()
+    private val attributes = mutableMapOf<String, Any>()
+    private val events = mutableListOf<SpanEvent>()
     private var droppedAttributes = 0
     private var droppedEvents = 0
 
@@ -240,8 +240,8 @@ internal open class SpanImpl(
                 duration = (closeOffsetNanos - startOffsetNanos).coerceAtLeast(0).nanoseconds,
                 status = statusLocked(),
                 isTruncated = truncated,
-                attributes = Collections.unmodifiableMap(LinkedHashMap(attributes)),
-                events = Collections.unmodifiableList(ArrayList(events)),
+                attributes = Collections.unmodifiableMap(attributes.toMap()),
+                events = Collections.unmodifiableList(events.toList()),
                 http = httpInfoLocked(),
                 droppedAttributeCount = droppedAttributes,
                 droppedEventCount = droppedEvents,

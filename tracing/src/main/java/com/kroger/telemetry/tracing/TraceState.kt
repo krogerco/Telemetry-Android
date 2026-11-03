@@ -71,10 +71,10 @@ internal class TraceState(
         private set
 
     /** Started and not yet ended. Searched for descendants when a span ends. */
-    private val open = LinkedHashSet<SpanImpl>()
+    private val open = mutableSetOf<SpanImpl>()
 
     /** Ended spans, kept until the root ends and they're exported together. */
-    private val finished = ArrayList<SpanImpl>()
+    private val finished = mutableListOf<SpanImpl>()
 
     /** Nanoseconds since the root started, on the monotonic clock. */
     fun offsetNow(): Long = monotonicAnchor.elapsedNow().inWholeNanoseconds
