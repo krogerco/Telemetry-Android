@@ -82,7 +82,7 @@ often an `async` that wasn't awaited. How to model common cases:
 
 | Scenario | Model it as |
 |---|---|
-| Unawaited async work | A bug. Use `coroutineScope` inside the span (see below). |
+| Unawaited async work | A bug. Use `coroutineScope` inside the span (see [Parallel work](#parallel-work)). |
 | Fire-and-forget follow-up (an upload started by "checkout") | A separate trace, linked with `origin.trace_id` / `origin.span_id` attributes |
 | Scheduled background work (WorkManager) | A separate, linked trace |
 | Screen load vs. what keeps loading after it | Siblings under a longer span, or separate traces |
@@ -247,7 +247,7 @@ val traceExporter = Relay.buildTypedRelay<TraceFacet> { trace ->
 
 ## Limits
 
-Library-owned data is bounded per trace. The values aren't configurable; changing one is a release-notes item.
+Library-owned data is bounded: spans per trace, and attributes, events and text per span. The values aren't configurable; changing one is a release-notes item.
 
 | Limit | Value | When it's exceeded |
 |---|---|---|
@@ -261,7 +261,27 @@ Library-owned data is bounded per trace. The values aren't configurable; changin
 | URL (after sanitizing) | 1,024 chars | truncated |
 | HTTP method | 16 chars | truncated |
 | status description | 512 chars | truncated |
-| **text per trace** | **65,536 chars** | see below |
+| **text per span** | **8,192 chars** | see [Text budget](#text-budget) |
+
+### Text budget
+
+Each span has its own budget of 8,192 chars for its name, HTTP method and URL, attribute keys, string attribute
+values, event names and status description. Numeric and boolean attribute values cost only their key. One span can't
+use up another's budget, so a span only ever loses its own data, and a trace's text is bounded by its span limit times
+this budget.
+
+- **Charges are cumulative, with one exception.** Adding attributes and events keeps charging, and nothing is returned
+  when the span ends. Replacing an attribute value or a status description charges only the difference, and gives back
+  the difference if the new value is smaller. Updating one attribute in a loop doesn't use the budget up, and a
+  replacement that doesn't grow always fits.
+- **A write that doesn't fit is dropped, and nothing else changes.** A dropped attribute or event is counted in
+  `droppedAttributeCount` or `droppedEventCount`. A dropped replacement leaves the old value in place, like an
+  unsupported value type does. A status keeps its kind and loses its description (`Error(null)`). A smaller write
+  that still fits is accepted.
+- **Spans always run to completion.** A dropped write never ends a span or the trace, so every span keeps its timing
+  and status and the trace is exported when its root ends. A span's own start always fits its budget.
+- **It's reported once per tracer.** The first drop caused by a span's text budget records a `limit_exceeded`
+  diagnostic; later drops show only in the counters.
 
 ---
 
@@ -277,8 +297,11 @@ sends traces off the device must scrub what its backend shouldn't see**, or the 
 ## Diagnostics
 
 Problems inside tracing itself are recorded on the tracer's telemeter as events described
-`"Tracing diagnostic: <kind>"`, with facets `TracingDiagnostic` and `Significance.WARNING`. They never throw into app
-code.
+`"Tracing diagnostic: <kind>"`, with facets `TracingDiagnostic` and `Significance.WARNING`.
+
+An exception thrown by code you give tracing (a listener, a `UrlSanitizer`, an initial attribute map or the telemeter)
+is contained and never reaches app code. It's reported here, except for one thrown by the telemeter itself, which is
+dropped because there's nowhere to report it. An `Error`, such as `OutOfMemoryError`, isn't caught and propagates.
 
 | `TracingDiagnostic.kind` | Reported when |
 |---|---|

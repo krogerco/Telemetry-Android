@@ -39,7 +39,7 @@ public class TraceFacet internal constructor(
     public val root: SpanData,
     /** Every recorded span, the root and truncated spans included, in start order. Children can be found by [SpanData.parentSpanId]. */
     public val spans: List<SpanData>,
-    /** Spans that weren't recorded because of the span limit or the text budget. */
+    /** Spans that weren't recorded because of the span limit. */
     public val droppedSpanCount: Int,
 ) : Facet {
     /** For logs only: the format may change in any release, so don't parse it. */
@@ -95,7 +95,7 @@ public class TracingDiagnostic internal constructor(
          */
         public const val ATTRIBUTES_UNREADABLE: String = "attributes_unreadable"
 
-        /** A count limit, length cap or the text budget dropped or truncated data. Reported once per limit. */
+        /** A count limit, length cap or a span's text budget dropped or truncated data. Reported once per limit. */
         public const val LIMIT_EXCEEDED: String = "limit_exceeded"
     }
 }

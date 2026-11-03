@@ -178,29 +178,6 @@ internal class SpanStartRejectionTest {
         )
     }
 
-    @Test
-    fun `GIVEN an exhausted text budget WHEN a span with an over-long name starts THEN only the drop is reported`() {
-        val root = tracer.startTrace("root")
-        // Fills the budget exactly: 4 (root name) + 63 * (3 + 1021) + (3 + 1017) = 65,536, with no diagnostic.
-        repeat(63) { root.setAttribute("k%02d".format(it), "v".repeat(1021)) }
-        root.setAttribute("k63", "v".repeat(1017))
-        assertTrue(telemeter.diagnostics.isEmpty())
-
-        val child = root.startChild("n".repeat(TraceLimits.MAX_NAME_LENGTH + 44))
-        root.end()
-
-        assertEquals(Ids.INVALID_SPAN_ID, child.spanId)
-        val diagnostic = telemeter.diagnostics.single()
-        assertTrue(diagnostic.message.startsWith("Text budget exhausted; span dropped"), diagnostic.message)
-        assertEquals(
-            64,
-            telemeter.traces
-                .single()
-                .root.attributes.size,
-        )
-        assertEquals(1, telemeter.traces.single().droppedSpanCount)
-    }
-
     /** An empty attribute map that records whether anything looked at it. */
     private class TouchTrackingMap : AbstractMap<String, Any?>() {
         var touched = false

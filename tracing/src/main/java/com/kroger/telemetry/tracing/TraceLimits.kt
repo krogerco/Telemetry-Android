@@ -30,12 +30,12 @@ import com.kroger.telemetry.tracing.TracingDiagnostic.Kinds.ATTRIBUTE_DROPPED
 import com.kroger.telemetry.tracing.TracingDiagnostic.Kinds.LIMIT_EXCEEDED
 
 /**
- * Bounds on library-owned data per trace. Internal by design: changing a value is a release-notes item.
+ * Bounds on library-owned data: spans per trace, and attributes, events and text per span. Internal by design: changing a value is a release-notes item.
  *
- * A span, attribute or event past a count limit or the text budget is dropped and counted in the export; a status
- * description that doesn't fit the budget is dropped and the status kept. Text past a length cap is truncated, except
- * an attribute key, which is dropped so that two distinct keys can't merge. Each case reports a `LIMIT_EXCEEDED`
- * diagnostic.
+ * A span past the span limit, and an attribute or event past a count limit or its span's text budget, is dropped and
+ * counted in the export; a status description that doesn't fit the budget is dropped and the status kept. Text past a
+ * length cap is truncated, except an attribute key, which is dropped so that two distinct keys can't merge. Each case
+ * reports a `LIMIT_EXCEEDED` diagnostic.
  */
 internal object TraceLimits {
     const val MAX_SPANS: Int = 256
@@ -57,8 +57,14 @@ internal object TraceLimits {
     const val MAX_METHOD_LENGTH: Int = 16
     const val MAX_DESCRIPTION_LENGTH: Int = 512
 
-    /** Chars of budgeted text per trace: names, methods, URLs, attribute keys, string values and status descriptions. */
-    const val TEXT_BUDGET: Int = 65_536
+    /**
+     * Chars of budgeted text per span: its name, method and URL, attribute keys and string values, event names and
+     * status description. Each span has its own budget, so one span never uses up another's. Charges are cumulative,
+     * except that replacing an attribute value or a status description charges only the difference, so a replacement
+     * that doesn't grow always fits. A write that doesn't fit is dropped; the span still runs to completion and keeps
+     * its timing and status. Larger than any single item can be, so a span's start always fits.
+     */
+    const val SPAN_TEXT_BUDGET: Int = 8_192
 }
 
 /**
@@ -77,7 +83,7 @@ internal enum class Limit {
     URL,
     HTTP_METHOD,
     STATUS_DESCRIPTION,
-    TEXT_BUDGET,
+    SPAN_TEXT_BUDGET,
 }
 
 /** Reports a `LIMIT_EXCEEDED` diagnostic, deduplicated by [limit]. */
@@ -101,7 +107,7 @@ internal fun String.capTo(
 
 /**
  * An attribute write after validation and normalization, which needs no lock.
- * [value] is null when the write must be dropped and counted; [cost] is what it charges to the text budget.
+ * [value] is null when the write must be dropped and counted; [cost] is what it charges to its span's text budget.
  */
 internal class NormalizedAttribute(
     val key: String,
@@ -112,7 +118,7 @@ internal class NormalizedAttribute(
 /**
  * Validates and converts an attribute write to its stored form, as described on [Span.setAttribute]: checks the key
  * length, caps strings, widens numbers and reports anything dropped or truncated. Needs no lock, so it runs before the
- * write takes one. The count limit and text budget are checked later, under the lock.
+ * write takes one. The count limit and the span's text budget are checked later, under the lock.
  *
  * Returns null for a null value, which is skipped without being counted.
  */
@@ -174,8 +180,14 @@ internal fun normalizeAttribute(
                 return NormalizedAttribute(key, null, 0)
             }
         }
-    return NormalizedAttribute(key, normalized, key.length + ((normalized as? String)?.length ?: 0))
+    return NormalizedAttribute(key, normalized, attributeCost(key, normalized))
 }
+
+/** What an attribute charges to its span's text budget: its key, plus its value if that is a string. */
+internal fun attributeCost(
+    key: String,
+    value: Any?,
+): Int = key.length + ((value as? String)?.length ?: 0)
 
 /** Adds without overflowing: a dropped counter stops at [Int.MAX_VALUE] rather than wrapping negative. */
 internal fun Int.saturatingPlus(other: Int): Int = if (other > Int.MAX_VALUE - this) Int.MAX_VALUE else this + other

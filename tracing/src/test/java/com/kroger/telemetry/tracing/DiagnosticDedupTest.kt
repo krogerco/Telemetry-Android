@@ -49,7 +49,7 @@ internal class DiagnosticDedupTest {
         }
 
         assertEquals(
-            listOf("Attribute value truncated to 1024 chars", "Text budget exhausted; event dropped"),
+            listOf("Attribute value truncated to 1024 chars", "Span text budget exhausted; event dropped"),
             limitMessages(),
         )
     }
@@ -72,19 +72,15 @@ internal class DiagnosticDedupTest {
     @Test
     fun `GIVEN budget drops of different items WHEN hit THEN they share one report`() {
         tracer.trace("root") { root ->
-            // Fill from a child, so the root keeps free attribute slots and only the budget can reject.
-            root.startChild("filler").apply {
-                fillBudget(leaving = 0)
-                end()
-            }
+            // The fill takes a few attribute slots, so the root keeps free ones and only the budget can reject.
+            root.fillBudget(leaving = 0)
             root.setAttribute("k", "v")
             root.addEvent("e")
-            root.startChild("c")
             root.setStatus(SpanStatus.Error("d"))
         }
 
-        // The budget is one limit, whatever it drops.
-        assertEquals(listOf("Text budget exhausted; attribute dropped"), limitMessages())
+        // The span text budget is one limit, whatever it drops.
+        assertEquals(listOf("Span text budget exhausted; attribute dropped"), limitMessages())
     }
 
     @Test

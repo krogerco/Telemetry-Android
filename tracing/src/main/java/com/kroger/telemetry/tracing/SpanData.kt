@@ -55,11 +55,11 @@ public class SpanData internal constructor(
     /** Request details. Non-null only for spans created by [Span.startHttpRequest]. */
     public val http: HttpRequestInfo?,
     /**
-     * Attributes dropped because of the count limit, the key length limit, an unsupported type, or the text budget,
+     * Attributes dropped because of the count limit, the key length limit, an unsupported type, or the span's text budget,
      * plus initial attributes left unread because the map was larger than the read bound.
      */
     public val droppedAttributeCount: Int,
-    /** Events dropped because of the count limit or the text budget. */
+    /** Events dropped because of the count limit or the span's text budget. */
     public val droppedEventCount: Int,
 ) {
     override fun toString(): String =

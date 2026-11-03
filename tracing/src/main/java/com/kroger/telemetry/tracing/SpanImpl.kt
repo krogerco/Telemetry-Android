@@ -39,6 +39,8 @@ internal open class SpanImpl(
     val sequence: Long,
     /** When the span started, as an offset from the trace's monotonic anchor. */
     private val startOffsetNanos: Long,
+    /** Text stored at start beyond [name]: an HTTP span's method and URL. */
+    extraStartText: Int = 0,
 ) : Span {
     final override val traceId: String get() = state.traceId
 
@@ -53,6 +55,14 @@ internal open class SpanImpl(
     private val events = mutableListOf<SpanEvent>()
     private var droppedAttributes = 0
     private var droppedEvents = 0
+
+    /**
+     * Chars of text this span has stored, charged against [TraceLimits.SPAN_TEXT_BUDGET]: its name, attribute keys and
+     * string values, event names and status description. Only this span's own writes count, so one span can't use up
+     * another's budget. Readable so this library's tests can check what each write charged.
+     */
+    var textUsed: Int = name.length + extraStartText
+        private set
 
     /** Set once, when the span ends. */
     var snapshot: SpanData? = null
@@ -99,7 +109,12 @@ internal open class SpanImpl(
 
     override fun recordException(throwable: Throwable): Unit = write { pending -> addEventLocked(EXCEPTION_EVENT, throwable, pending) }
 
-    override fun setStatus(status: SpanStatus): Unit = write { pending -> explicitStatus = acceptStatusLocked(status, pending) }
+    override fun setStatus(status: SpanStatus): Unit =
+        write { pending ->
+            // The previous description is replaced whatever happens next, so its budget goes back first.
+            release(explicitStatus.chargedText())
+            explicitStatus = acceptStatusLocked(status, pending)
+        }
 
     override fun end(): Unit = state.end(this)
 
@@ -144,6 +159,8 @@ internal open class SpanImpl(
     ) {
         val key = normalized.key
         val accepted = normalized.value
+        // What a value being replaced was charged, so a replacement is charged only for its growth.
+        val replacedCost = attributes[key]?.let { attributeCost(key, it) } ?: 0
         when {
             accepted == null -> {
                 droppedAttributes = droppedAttributes.saturatingPlus(1)
@@ -157,14 +174,14 @@ internal open class SpanImpl(
                 )
             }
 
-            !state.reserve(normalized.cost) -> {
+            !reserve(normalized.cost, replacing = replacedCost) -> {
                 droppedAttributes = droppedAttributes.saturatingPlus(1)
-                pending.limitExceeded(Limit.TEXT_BUDGET, "Text budget exhausted; attribute dropped")
+                pending.limitExceeded(Limit.SPAN_TEXT_BUDGET, "Span text budget exhausted; attribute dropped")
             }
 
             else -> {
                 attributes[key] = accepted
-            } // replacing a key takes no new count slot
+            } // replacing a key takes no new count slot, and only its growth in budget
         }
     }
 
@@ -183,9 +200,9 @@ internal open class SpanImpl(
                 )
             }
 
-            !state.reserve(eventName.length) -> {
+            !reserve(eventName.length) -> {
                 droppedEvents = droppedEvents.saturatingPlus(1)
-                pending.limitExceeded(Limit.TEXT_BUDGET, "Text budget exhausted; event dropped")
+                pending.limitExceeded(Limit.SPAN_TEXT_BUDGET, "Span text budget exhausted; event dropped")
             }
 
             else -> {
@@ -199,6 +216,26 @@ internal open class SpanImpl(
         }
     }
 
+    /**
+     * Charges [cost] chars to this span's text budget, all or nothing. For a write that replaces an earlier value,
+     * [replacing] is the text that value was charged: only the growth is charged, so a value that doesn't grow always
+     * fits and gives the difference back. Caller holds the lock.
+     */
+    private fun reserve(
+        cost: Int,
+        replacing: Int = 0,
+    ): Boolean {
+        val net = cost - replacing
+        if (net > TraceLimits.SPAN_TEXT_BUDGET - textUsed) return false
+        textUsed += net
+        return true
+    }
+
+    /** Gives back chars that were charged for text no longer stored. Caller holds the lock. */
+    protected fun release(cost: Int) {
+        textUsed -= cost
+    }
+
     /** Caps and charges an `Error` description; if it doesn't fit, the status is kept and the description dropped. */
     protected fun acceptStatusLocked(
         status: SpanStatus,
@@ -206,8 +243,8 @@ internal open class SpanImpl(
     ): SpanStatus {
         val description = (status as? SpanStatus.Error)?.description ?: return status
         val capped = description.capTo(TraceLimits.MAX_DESCRIPTION_LENGTH, Limit.STATUS_DESCRIPTION, "Status description", pending)
-        if (!state.reserve(capped.length)) {
-            pending.limitExceeded(Limit.TEXT_BUDGET, "Text budget exhausted; status description dropped")
+        if (!reserve(capped.length)) {
+            pending.limitExceeded(Limit.SPAN_TEXT_BUDGET, "Span text budget exhausted; status description dropped")
             return SpanStatus.Error(null)
         }
         return if (capped == description) status else SpanStatus.Error(capped)
@@ -266,6 +303,9 @@ internal open class SpanImpl(
     }
 }
 
+/** What a stored status charged to its span's text budget: its description, stored at the length it was charged. */
+private fun SpanStatus?.chargedText(): Int = (this as? SpanStatus.Error)?.description?.length ?: 0
+
 /** The real [HttpRequestSpan]. [url] is already sanitized and capped; [method] is upper-cased and capped. */
 internal class HttpSpanImpl(
     state: TraceState,
@@ -276,11 +316,11 @@ internal class HttpSpanImpl(
     startOffsetNanos: Long,
     private val method: String,
     private val url: String,
-) : SpanImpl(state, spanId, parent, name, sequence, startOffsetNanos),
+) : SpanImpl(state, spanId, parent, name, sequence, startOffsetNanos, extraStartText = method.length + url.length),
     HttpRequestSpan {
     private var statusCode: Int? = null
 
-    /** The automatic status for the latest code, with its description already charged to the text budget. */
+    /** The automatic status for the latest code, with its description already charged to the span's text budget. */
     private var automaticStatus: SpanStatus? = null
 
     override fun propagationHeaders(): Map<String, String> {
@@ -294,12 +334,13 @@ internal class HttpSpanImpl(
 
     /**
      * Stores the code, and for 400 and above the automatic `Error("HTTP <code>")`. Its description is charged to the
-     * text budget now, like any other description, so snapshots never add uncharged text. It's charged even when an
+     * span's text budget now, like any other description, so snapshots never add uncharged text. It's charged even when an
      * explicit status will take precedence, because which status wins is only known when the span ends.
      */
     override fun setResponse(statusCode: Int): Unit =
         write { pending ->
             this.statusCode = statusCode
+            release(automaticStatus.chargedText())
             automaticStatus =
                 if (statusCode >= HTTP_ERROR_THRESHOLD) acceptStatusLocked(SpanStatus.Error("HTTP $statusCode"), pending) else null
         }
@@ -314,8 +355,7 @@ internal class HttpSpanImpl(
 }
 
 /**
- * The no-op span for every case tracing ignores: an ended parent, a closed trace, the span limit, the text budget,
- * and [Tracer.NoOp]. Invisible to listeners and never exported.
+ * The no-op span for every case tracing ignores: an ended parent, a closed trace, the span limit, and [Tracer.NoOp]. Invisible to listeners and never exported.
  */
 internal class InertSpan(
     override val traceId: String,

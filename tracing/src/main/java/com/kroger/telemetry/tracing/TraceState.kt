@@ -63,12 +63,8 @@ internal class TraceState(
     /** Spans recorded so far, checked against [TraceLimits.MAX_SPANS]. */
     private var spanCount = 0
 
-    /** Starts rejected by the span limit or the text budget, exported as [TraceFacet.droppedSpanCount]. */
+    /** Starts rejected by the span limit, exported as [TraceFacet.droppedSpanCount]. */
     private var droppedSpanCount = 0
-
-    /** Readable so this library's tests can check what each write charged. */
-    var textBudgetUsed = 0
-        private set
 
     /** Started and not yet ended. Searched for descendants when a span ends. */
     private val open = mutableSetOf<SpanImpl>()
@@ -79,19 +75,11 @@ internal class TraceState(
     /** Nanoseconds since the root started, on the monotonic clock. */
     fun offsetNow(): Long = monotonicAnchor.elapsedNow().inWholeNanoseconds
 
-    /** Charges [cost] chars to the trace's text budget, all or nothing. Caller holds [lock]. */
-    fun reserve(cost: Int): Boolean {
-        if (cost > TraceLimits.TEXT_BUDGET - textBudgetUsed) return false
-        textBudgetUsed += cost
-        return true
-    }
-
     /**
      * Starts a root (null [parent]) or a child. With a non-null [method] the result is an HTTP span named
      * "HTTP <METHOD>", and [name] is ignored. Returns an inert span when the start is rejected.
      *
-     * A start that ends up inert reports only why it was dropped (span limit or text budget); a late start reports
-     * nothing. Diagnostics gathered along the way, such as a truncated name or a throwing sanitizer, are discarded.
+     * A start that ends up inert reports only why it was dropped (the span limit); a late start reports nothing. Diagnostics gathered along the way, such as a truncated name or a throwing sanitizer, are discarded.
      */
     fun start(
         parent: SpanImpl?,
@@ -204,9 +192,6 @@ internal class TraceState(
         val spanName =
             (if (httpMethod != null) "HTTP $httpMethod" else name)
                 .capTo(TraceLimits.MAX_NAME_LENGTH, Limit.SPAN_NAME, "Span name", pending)
-        if (!reserve(spanName.length + (httpMethod?.length ?: 0) + (url?.length ?: 0))) {
-            return dropLocked(Limit.TEXT_BUDGET, "Text budget exhausted; span dropped", pending)
-        }
         val span =
             if (httpMethod != null) {
                 HttpSpanImpl(this, Ids.newSpanId(), parent, spanName, nextSequence++, offsetNow(), httpMethod, url.orEmpty())

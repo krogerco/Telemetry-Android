@@ -35,6 +35,7 @@ import com.kroger.telemetry.tracing.util.budgetLeft
 import com.kroger.telemetry.tracing.util.budgetUsed
 import com.kroger.telemetry.tracing.util.fillBudget
 import org.junit.jupiter.api.Assertions.assertEquals
+import org.junit.jupiter.api.Assertions.assertNotEquals
 import org.junit.jupiter.api.Assertions.assertNull
 import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.Test
@@ -245,16 +246,121 @@ internal class AttributesAndLimitsTest {
     // Text budget
 
     @Test
-    fun `GIVEN an attribute WHEN overwritten THEN the new value is charged and nothing is refunded`() {
+    fun `GIVEN an attribute WHEN overwritten THEN only the difference is charged and a smaller value gives budget back`() {
         val root = tracer.startTrace("root")
         val start = root.budgetUsed
 
         root.setAttribute("key", "long value")
         assertEquals(start + 3 + 10, root.budgetUsed)
         root.setAttribute("key", "v")
-        assertEquals(start + 13 + 3 + 1, root.budgetUsed)
+        assertEquals(start + 3 + 1, root.budgetUsed)
+        root.setAttribute("key", "a longer value")
+        assertEquals(start + 3 + 14, root.budgetUsed)
+        // A non-string value costs only its key, so the string's text goes back.
         root.setAttribute("key", 42)
-        assertEquals(start + 17 + 3, root.budgetUsed)
+        assertEquals(start + 3, root.budgetUsed)
+    }
+
+    @Test
+    fun `GIVEN one attribute updated many times WHEN the budget is checked THEN it never grows and nothing is dropped`() {
+        val root = tracer.startTrace("root")
+        root.setAttribute("progress", "x".repeat(TraceLimits.MAX_STRING_VALUE_LENGTH))
+        val used = root.budgetUsed
+
+        // Cumulative charging would exhaust the whole budget well before this many updates.
+        repeat(500) { root.setAttribute("progress", "y".repeat(TraceLimits.MAX_STRING_VALUE_LENGTH)) }
+        assertEquals(used, root.budgetUsed)
+        root.end()
+
+        assertEquals("y".repeat(TraceLimits.MAX_STRING_VALUE_LENGTH), trace.root.attributes["progress"])
+        assertEquals(0, trace.root.droppedAttributeCount)
+        assertTrue(telemeter.diagnostics.isEmpty())
+    }
+
+    @Test
+    fun `GIVEN an overwrite that doesn't fit WHEN set THEN the old value stays and writes that don't grow are still accepted`() {
+        val root = tracer.startTrace("root")
+        val child = root.startChild("c")
+        child.fillBudget(leaving = 5)
+        child.setAttribute("k", "ab")
+        assertEquals(2, child.budgetLeft)
+
+        // Growing from 3 to 8 chars needs 5, and only 2 are left, so the write is dropped and the old value stays.
+        child.setAttribute("k", "abcdefg")
+        // A replacement that doesn't grow always fits, and a smaller one gives budget back.
+        child.setAttribute("k", "xy")
+        child.setAttribute("k", "a")
+        assertEquals(3, child.budgetLeft)
+        // There is no cutoff: a new attribute that fits what's left is accepted.
+        child.setAttribute("n", true)
+
+        assertEquals(2, child.budgetLeft)
+        child.end()
+        root.end()
+        val exported = trace.spans.single { it.name == "c" }
+        assertEquals(mapOf("k" to "a", "n" to true), exported.attributes.filterKeys { !it.startsWith("f") })
+        assertEquals(1, exported.droppedAttributeCount)
+    }
+
+    @Test
+    fun `GIVEN a span whose budget is nearly used WHEN a write doesn't fit THEN only that write is dropped and other spans are unaffected`() {
+        val root = tracer.startTrace("root")
+        val full = root.startChild("full")
+        full.fillBudget(leaving = 10)
+
+        full.setAttribute("big", "x".repeat(50))
+        // Each of these fits what's left of the span's own budget, so they are kept.
+        full.setAttribute("a", "b")
+        full.addEvent("e")
+        // 10 chars no longer fit: the status keeps its kind and loses its description.
+        full.setStatus(SpanStatus.Error("0123456789"))
+        // A sibling has its own budget, so the same write that was dropped on `full` fits there.
+        val sibling = root.startChild("sibling")
+        sibling.setAttribute("big", "x".repeat(50))
+        sibling.end()
+        full.end()
+        root.end()
+
+        val exportedFull = trace.spans.single { it.name == "full" }
+        assertEquals("b", exportedFull.attributes["a"])
+        assertTrue("big" !in exportedFull.attributes)
+        assertEquals(1, exportedFull.droppedAttributeCount)
+        assertEquals(listOf("e"), exportedFull.events.map { it.name })
+        assertEquals(SpanStatus.Error(null), exportedFull.status)
+        val exportedSibling = trace.spans.single { it.name == "sibling" }
+        assertEquals("x".repeat(50), exportedSibling.attributes["big"])
+        assertEquals(0, exportedSibling.droppedAttributeCount)
+        // Nothing was ended early or dropped as a span.
+        assertTrue(trace.spans.none { it.isTruncated })
+        assertEquals(0, trace.droppedSpanCount)
+        assertEquals(listOf("Span text budget exhausted; attribute dropped"), limitMessages())
+    }
+
+    @Test
+    fun `GIVEN a status description WHEN replaced THEN only the new one is charged`() {
+        val root = tracer.startTrace("root")
+        val start = root.budgetUsed
+
+        root.setStatus(SpanStatus.Error("a long description"))
+        assertEquals(start + 18, root.budgetUsed)
+        root.setStatus(SpanStatus.Error("short"))
+        assertEquals(start + 5, root.budgetUsed)
+        root.setStatus(SpanStatus.Ok)
+        assertEquals(start, root.budgetUsed)
+        repeat(500) { root.setStatus(SpanStatus.Error("x".repeat(TraceLimits.MAX_DESCRIPTION_LENGTH))) }
+        assertEquals(start + TraceLimits.MAX_DESCRIPTION_LENGTH, root.budgetUsed)
+    }
+
+    @Test
+    fun `GIVEN an HTTP response code WHEN a later response replaces it THEN the automatic description is given back`() {
+        val root = tracer.startTrace("root")
+        val request = root.startHttpRequest("GET", "https://h/p")
+        val start = request.budgetUsed
+
+        request.setResponse(503)
+        assertEquals(start + "HTTP 503".length, request.budgetUsed)
+        request.setResponse(200)
+        assertEquals(start, request.budgetUsed)
     }
 
     @Test
@@ -268,17 +374,20 @@ internal class AttributesAndLimitsTest {
         assertEquals(7 + "exception".length, root.budgetUsed)
         root.setStatus(SpanStatus.Error("bad"))
         assertEquals(16 + 3, root.budgetUsed)
+        // Replacing the status gives its description back.
         root.setStatus(SpanStatus.Ok)
-        assertEquals(19, root.budgetUsed)
+        assertEquals(16, root.budgetUsed)
         root.setAttribute("enum", Mode.GRID)
-        assertEquals(19 + 4 + 4, root.budgetUsed)
+        assertEquals(16 + 4 + 4, root.budgetUsed)
         // Truncated text is charged at its stored length.
         root.setAttribute("k", "x".repeat(5_000))
-        assertEquals(27 + 1 + 1_024, root.budgetUsed)
-        root.startChild("child", mapOf("a" to "bc"))
-        assertEquals(1_052 + 5 + 1 + 2, root.budgetUsed)
-        root.startHttpRequest("get", "https://h/p?token=t")
-        assertEquals(1_060 + "HTTP GET".length + "GET".length + "https://h/p?token=REDACTED".length, root.budgetUsed)
+        assertEquals(24 + 1 + 1_024, root.budgetUsed)
+        // A child's start text and initial attributes are charged to the child, not to its parent.
+        val child = root.startChild("child", mapOf("a" to "bc"))
+        assertEquals(5 + 1 + 2, child.budgetUsed)
+        val request = root.startHttpRequest("get", "https://h/p?token=t")
+        assertEquals("HTTP GET".length + "GET".length + "https://h/p?token=REDACTED".length, request.budgetUsed)
+        assertEquals(24 + 1 + 1_024, root.budgetUsed)
         // Ending the trace builds snapshots, which charges nothing.
         val before = root.budgetUsed
         root.end()
@@ -302,24 +411,6 @@ internal class AttributesAndLimitsTest {
     }
 
     @Test
-    fun `GIVEN a span start that doesn't fit WHEN started THEN it is inert and consumes nothing`() {
-        val root = tracer.startTrace("root")
-        // "HTTP GET" + "GET" + "https://example.com/a" costs 32; leave 31.
-        root.fillBudget(leaving = 31)
-
-        val request = root.startHttpRequest("GET", "https://example.com/a")
-
-        assertEquals(Ids.INVALID_SPAN_ID, request.spanId)
-        assertEquals(31, root.budgetLeft)
-        // Exactly what's left still fits.
-        val child = root.startChild("c".repeat(31))
-        assertEquals(0, root.budgetLeft)
-        child.end()
-        root.end()
-        assertEquals(1, trace.droppedSpanCount)
-    }
-
-    @Test
     fun `GIVEN a status description that doesn't fit WHEN set THEN the span reads Error(null)`() {
         val root = tracer.startTrace("root")
         root.fillBudget(leaving = 3)
@@ -329,41 +420,43 @@ internal class AttributesAndLimitsTest {
         root.end()
 
         assertEquals(SpanStatus.Error(null), trace.root.status)
-        assertEquals(listOf("Text budget exhausted; status description dropped"), limitMessages())
+        assertEquals(listOf("Span text budget exhausted; status description dropped"), limitMessages())
     }
 
     @Test
-    fun `GIVEN an exhausted budget WHEN writing THEN attributes and events are dropped and starts are inert`() {
+    fun `GIVEN an exhausted budget WHEN writing THEN its attributes and events are dropped but children and free writes are unaffected`() {
         val root = tracer.startTrace("root")
         root.fillBudget(leaving = 0)
-        assertEquals(TraceLimits.TEXT_BUDGET, root.budgetUsed)
+        assertEquals(TraceLimits.SPAN_TEXT_BUDGET, root.budgetUsed)
 
         root.setAttribute("x", "y")
         // Even a non-string value is charged for its key, so it's dropped too.
         root.setAttribute("n", 1)
         root.addEvent("z")
+        // A child has its own budget, so it starts and records normally.
         val child = root.startChild("c")
+        child.setAttribute("ok", "yes")
+        child.end()
         // A status with no description costs nothing, so it's still accepted.
         root.setStatus(SpanStatus.Cancelled)
         root.end()
 
-        assertEquals(Ids.INVALID_SPAN_ID, child.spanId)
+        assertNotEquals(Ids.INVALID_SPAN_ID, child.spanId)
+        assertEquals("yes", trace.spans.single { it.name == "c" }.attributes["ok"])
         assertTrue("x" !in trace.root.attributes && "n" !in trace.root.attributes)
         assertEquals(2, trace.root.droppedAttributeCount)
         assertEquals(1, trace.root.droppedEventCount)
-        assertEquals(1, trace.droppedSpanCount)
+        assertEquals(0, trace.droppedSpanCount)
         assertEquals(SpanStatus.Cancelled, trace.root.status)
     }
 
-    /** Every budgeted string a snapshot holds, automatic HTTP descriptions included. */
-    private fun budgetedText(trace: TraceFacet): Int =
-        trace.spans.sumOf { span ->
-            span.name.length +
-                (span.http?.let { it.method.length + it.url.length } ?: 0) +
-                span.attributes.entries.sumOf { (k, v) -> k.length + ((v as? String)?.length ?: 0) } +
-                span.events.sumOf { it.name.length } +
-                ((span.status as? SpanStatus.Error)?.description?.length ?: 0)
-        }
+    /** Every budgeted string a span's snapshot holds, automatic HTTP descriptions included. */
+    private fun budgetedText(span: SpanData): Int =
+        span.name.length +
+            (span.http?.let { it.method.length + it.url.length } ?: 0) +
+            span.attributes.entries.sumOf { (k, v) -> k.length + ((v as? String)?.length ?: 0) } +
+            span.events.sumOf { it.name.length } +
+            ((span.status as? SpanStatus.Error)?.description?.length ?: 0)
 
     @Test
     fun `GIVEN a trace that reaches every count limit WHEN exported THEN each limit holds before the budget runs out`() {
@@ -386,47 +479,39 @@ internal class AttributesAndLimitsTest {
         assertEquals(1, trace.root.droppedAttributeCount)
         assertEquals(128, trace.root.events.size)
         assertEquals(1, trace.root.droppedEventCount)
-        assertTrue(root.budgetUsed < TraceLimits.TEXT_BUDGET)
+        assertTrue(root.budgetUsed < TraceLimits.SPAN_TEXT_BUDGET)
     }
 
     @Test
-    fun `GIVEN a trace with every kind of text WHEN the budget runs out THEN each kind is exported and none uncharged`() {
-        // Interleaved, so every kind of budgeted text is accepted before the budget runs out: span names, HTTP methods
-        // and URLs, attribute keys and values, event names, explicit and automatic status descriptions.
+    fun `GIVEN a span with every kind of text WHEN its budget runs out THEN each kind is exported and none uncharged`() {
+        // Every kind of budgeted text is accepted before the budget runs out: the HTTP span's name, method and URL, an
+        // explicit and an automatic status description, an event, and attribute keys and values.
         val root = tracer.startTrace("root")
-        // Each step charges about 850 chars, so the budget runs out around step 77 and later steps start inert.
-        repeat(100) { i ->
-            val step = root.startChild("step$i")
-            step.setAttribute("key$i", "v".repeat(400))
-            step.addEvent("event$i")
-            step.setStatus(SpanStatus.Error("explicit$i"))
-            val request = step.startHttpRequest("get", "https://h/" + "p".repeat(400))
-            request.setResponse(503) // automatic Error("HTTP 503"), no explicit status
-            request.end()
-            step.end()
-        }
+        val request = root.startHttpRequest("get", "https://h/" + "p".repeat(400))
+        request.setStatus(SpanStatus.Error("explicit"))
+        request.setResponse(503) // automatic Error("HTTP 503"); the explicit status wins
+        request.addEvent("event")
+        // Each attribute charges about 400 chars, so the budget runs out partway through.
+        repeat(100) { i -> request.setAttribute("key$i", "v".repeat(400)) }
+        request.end()
         root.end()
 
-        val trace = trace
-        val http = trace.spans.filter { it.http != null }
-        val steps = trace.spans.filter { it.name.startsWith("step") }
-        // Each kind made it into the export...
-        assertTrue(steps.any { it.attributes.isNotEmpty() })
-        assertTrue(steps.any { it.events.isNotEmpty() })
-        assertTrue(steps.any { (it.status as? SpanStatus.Error)?.description?.startsWith("explicit") == true })
-        assertTrue(http.any { it.status == SpanStatus.Error("HTTP 503") && !it.isTruncated })
-        // ...and the budget did run out partway.
-        assertEquals(TraceLimits.TEXT_BUDGET, root.budgetUsed)
-        assertTrue(steps.size < 100)
+        val http = trace.spans.single { it.http != null }
+        assertEquals(SpanStatus.Error("explicit"), http.status)
+        assertEquals(listOf("event"), http.events.map { it.name })
+        assertTrue(http.attributes.isNotEmpty())
+        assertTrue(http.attributes.size < 100)
+        assertTrue(http.droppedAttributeCount > 0)
+        assertTrue(request.budgetUsed <= TraceLimits.SPAN_TEXT_BUDGET)
         // Nothing exported is uncharged.
-        assertTrue(budgetedText(trace) <= root.budgetUsed, "budgeted text ${budgetedText(trace)} > charged ${root.budgetUsed}")
+        assertTrue(budgetedText(http) <= request.budgetUsed, "budgeted text ${budgetedText(http)} > charged ${request.budgetUsed}")
     }
 
     @Test
     fun `GIVEN an exhausted budget WHEN an HTTP error response arrives THEN its description is dropped, not added uncharged`() {
         val root = tracer.startTrace("root")
         val request = root.startHttpRequest("GET", "https://h/a")
-        root.fillBudget(leaving = 0)
+        request.fillBudget(leaving = 0)
 
         request.setResponse(500)
         request.end()
@@ -435,7 +520,7 @@ internal class AttributesAndLimitsTest {
         val http = trace.spans.single { it.http != null }
         assertEquals(SpanStatus.Error(null), http.status)
         assertEquals(500, http.http?.statusCode)
-        assertEquals(TraceLimits.TEXT_BUDGET, budgetedText(trace))
+        assertEquals(TraceLimits.SPAN_TEXT_BUDGET, budgetedText(http))
     }
 
     // Immutability
@@ -666,10 +751,13 @@ internal class AttributesAndLimitsTest {
 
         tracer.trace("root", map) { }
 
-        // 63 large entries fit the budget; the 64th doesn't, which leaves a slot and room for "small".
+        // Only some of the large entries fit the span's budget, and each later one needs more than what's left, but
+        // there is still room for "small".
+        val entryCost = "k00".length + TraceLimits.MAX_STRING_VALUE_LENGTH
+        val fitting = (TraceLimits.SPAN_TEXT_BUDGET - "root".length) / entryCost
         assertEquals(true, trace.root.attributes["small"])
-        assertEquals(64, trace.root.attributes.size)
-        assertEquals(1, trace.root.droppedAttributeCount)
+        assertEquals(fitting + 1, trace.root.attributes.size)
+        assertEquals(64 - fitting, trace.root.droppedAttributeCount)
     }
 
     @Test

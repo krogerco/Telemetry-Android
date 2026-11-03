@@ -30,15 +30,15 @@ import com.kroger.telemetry.tracing.Span
 import com.kroger.telemetry.tracing.SpanImpl
 import com.kroger.telemetry.tracing.TraceLimits
 
-/** Chars charged to this span's trace so far. */
-internal val Span.budgetUsed: Int get() = (this as SpanImpl).state.textBudgetUsed
+/** Chars charged to this span's own text budget so far. */
+internal val Span.budgetUsed: Int get() = (this as SpanImpl).textUsed
 
-/** Chars left in this span's trace. */
-internal val Span.budgetLeft: Int get() = TraceLimits.TEXT_BUDGET - budgetUsed
+/** Chars left in this span's own text budget. */
+internal val Span.budgetLeft: Int get() = TraceLimits.SPAN_TEXT_BUDGET - budgetUsed
 
 /**
- * Spends this span's trace budget until exactly [leaving] chars remain, using string attributes for bulk and one
- * event for the remainder. The span should have no attributes yet: a full budget needs close to the attribute limit.
+ * Spends this span's budget until exactly [leaving] chars remain, using string attributes for bulk and one event for
+ * the remainder. The span should have no attributes yet.
  */
 internal fun Span.fillBudget(leaving: Int) {
     var index = 0

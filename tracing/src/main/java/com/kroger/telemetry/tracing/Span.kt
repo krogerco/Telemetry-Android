@@ -38,7 +38,10 @@ public sealed interface Span {
     /** This span's ID: 16 lowercase hex characters (W3C format). All zeros for an inert span. */
     public val spanId: String
 
-    /** Starts a child span. Returns an inert span if this span has already ended. Prefer the [child] helper. */
+    /**
+     * Starts a child span. Returns an inert span if this span has already ended or the trace already has the maximum
+     * of 256 spans, in which case the drop is counted in [TraceFacet.droppedSpanCount]. Prefer the [child] helper.
+     */
     public fun startChild(
         name: String,
         attributes: Map<String, Any?> = emptyMap(),
@@ -47,7 +50,7 @@ public sealed interface Span {
     /**
      * Starts a child span for one outgoing HTTP request, named "HTTP <METHOD>" (e.g. "HTTP GET").
      * The URL is sanitized by the tracer's [UrlSanitizer] before anything is stored, and is never part of the name.
-     * Returns an inert span if this span has already ended.
+     * Returns an inert span if this span has already ended or the trace already has the maximum of 256 spans.
      */
     public fun startHttpRequest(
         method: String,
@@ -56,7 +59,9 @@ public sealed interface Span {
     ): HttpRequestSpan
 
     /**
-     * Sets an attribute that describes the span as a whole. Setting an existing key replaces its value.
+     * Sets an attribute that describes the span as a whole. Setting an existing key replaces its value, and only the
+     * change in its text is charged to this span's text budget, so updating one attribute repeatedly doesn't use it up.
+     * A write that would grow the span's text past its budget is dropped and counted; the old value stays.
      * Accepted values: String, Long, Double and Boolean. Int, Short and Byte become Long, Float becomes Double
      * through its decimal form (0.1f is stored as 0.1), and an Enum becomes its name. A `null` value is ignored. Other types are dropped and reported once.
      */
@@ -71,7 +76,10 @@ public sealed interface Span {
     /** Records an exception as an event named "exception". It doesn't change the status by itself. */
     public fun recordException(throwable: Throwable)
 
-    /** Sets the outcome explicitly. The last call wins. Use it for errors that are returned rather than thrown. */
+    /**
+     * Sets the outcome explicitly. The last call wins, and a replaced description gives its text budget back.
+     * Use it for errors that are returned rather than thrown.
+     */
     public fun setStatus(status: SpanStatus)
 
     /** Ends this span and force-ends any descendants that are still open. Only the first call has an effect. */
@@ -91,7 +99,7 @@ public sealed interface HttpRequestSpan : Span {
     /**
      * Records the response status code; a later call replaces an earlier one. If the latest code is 400 or above,
      * the span reads `Error("HTTP <code>")`, unless a status was set explicitly or the span was truncated. The
-     * description is charged to the trace's text budget when the code is recorded; if it doesn't fit, the span reads
+     * description is charged to the span's text budget when the code is recorded; if it doesn't fit, the span reads
      * `Error(null)`.
      */
     public fun setResponse(statusCode: Int)
