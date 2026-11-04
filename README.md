@@ -83,7 +83,7 @@ sealed class ActivityEvent : Event {
     }
 
     data class NetworkError(val throwable: Throwable) : ActivityEvent() {
-        listOf(
+        override val facets: List<Facet> = listOf(
             Significance.ERROR,
             /* additional facets */
         )
@@ -356,7 +356,7 @@ class AppTelemeter : Telemeter by Telemeter.build()
 class ModuleTelemeter(appTelemeter: AppTelemeter) : Telemeter by appTelemeter.child()
 
 // can be created as a child of any telemeter
-class NetworkTelemeter(telemeter: Telemeter) by telemeter.child()
+class NetworkTelemeter(telemeter: Telemeter): Telemeter by telemeter.child()
 ```
 
 ---

@@ -80,14 +80,14 @@ records nothing.
 In correct code a child never outlives its parent, so a truncated span usually points to a structuring bug, most
 often an `async` that wasn't awaited. How to model common cases:
 
-| Scenario | Model it as |
-|---|---|
-| Unawaited async work | A bug. Use `coroutineScope` inside the span (see [Parallel work](#parallel-work)). |
-| Fire-and-forget follow-up (an upload started by "checkout") | A separate trace, linked with `origin.trace_id` / `origin.span_id` attributes |
-| Scheduled background work (WorkManager) | A separate, linked trace |
-| Screen load vs. what keeps loading after it | Siblings under a longer span, or separate traces |
-| A long-lived `Flow` | A span per emission or batch, or one span for the whole collection |
-| A shared in-flight request | A span for the shared work, outside both callers |
+| Scenario                                                    | Model it as                                                                        |
+|-------------------------------------------------------------|------------------------------------------------------------------------------------|
+| Unawaited async work                                        | A bug. Use `coroutineScope` inside the span (see [Parallel work](#parallel-work)). |
+| Fire-and-forget follow-up (an upload started by "checkout") | A separate trace, linked with `origin.trace_id` / `origin.span_id` attributes      |
+| Scheduled background work (WorkManager)                     | A separate, linked trace                                                           |
+| Screen load vs. what keeps loading after it                 | Siblings under a longer span, or separate traces                                   |
+| A long-lived `Flow`                                         | A span per emission or batch, or one span for the whole collection                 |
+| A shared in-flight request                                  | A span for the shared work, outside both callers                                   |
 
 Until span links are added, use the `origin.*` attribute convention to say one trace was caused by another:
 
@@ -130,20 +130,20 @@ coroutineScope {
 
 A span ends with one of three statuses:
 
-| Status | Meaning |
-|---|---|
-| `SpanStatus.Ok` | Completed normally. Also what a span reads as if nothing set a status. |
-| `SpanStatus.Cancelled` | Stopped before completing, e.g. the user left the screen, or the span was truncated. Not a failure. |
-| `SpanStatus.Error(description)` | Failed. `description` is short, low-cardinality text such as `"HTTP 503"` or `"IOException"`. |
+| Status                          | Meaning                                                                                             |
+|---------------------------------|-----------------------------------------------------------------------------------------------------|
+| `SpanStatus.Ok`                 | Completed normally. Also what a span reads as if nothing set a status.                              |
+| `SpanStatus.Cancelled`          | Stopped before completing, e.g. the user left the screen, or the span was truncated. Not a failure. |
+| `SpanStatus.Error(description)` | Failed. `description` is short, low-cardinality text such as `"HTTP 503"` or `"IOException"`.       |
 
 `trace {}` and `child {}` set the status from what escapes the block:
 
-| Block outcome | Status |
-|---|---|
-| returns normally | unchanged |
-| throws `TimeoutCancellationException` (e.g. `withTimeout`) | the exception is recorded, then `Error("timeout")` |
-| throws any other `CancellationException` | `Cancelled` |
-| throws anything else | the exception is recorded, then `Error("<exception class name>")`, never the message |
+| Block outcome                                              | Status                                                                               |
+|------------------------------------------------------------|--------------------------------------------------------------------------------------|
+| returns normally                                           | unchanged                                                                            |
+| throws `TimeoutCancellationException` (e.g. `withTimeout`) | the exception is recorded, then `Error("timeout")`                                   |
+| throws any other `CancellationException`                   | `Cancelled`                                                                          |
+| throws anything else                                       | the exception is recorded, then `Error("<exception class name>")`, never the message |
 
 A thrown exception replaces no status or an explicit `Ok`, but never an explicit `Error` or `Cancelled`.
 
@@ -249,19 +249,19 @@ val traceExporter = Relay.buildTypedRelay<TraceFacet> { trace ->
 
 Library-owned data is bounded: spans per trace, and attributes, events and text per span. The values aren't configurable; changing one is a release-notes item.
 
-| Limit | Value | When it's exceeded |
-|---|---|---|
-| spans per trace | 256 | new spans are inert, and `TraceFacet.droppedSpanCount` goes up |
-| attributes per span | 64 | the attribute is dropped, and `SpanData.droppedAttributeCount` goes up |
-| entries read from an initial attribute map | 256 | the rest aren't read, and each counts as a dropped attribute |
-| events per span | 128 | the event is dropped, and `SpanData.droppedEventCount` goes up |
-| span / event name | 256 chars | truncated |
-| attribute key | 128 chars | the attribute is **dropped** (truncating could merge distinct keys) |
-| string attribute value | 1,024 chars | truncated |
-| URL (after sanitizing) | 1,024 chars | truncated |
-| HTTP method | 16 chars | truncated |
-| status description | 512 chars | truncated |
-| **text per span** | **8,192 chars** | see [Text budget](#text-budget) |
+| Limit                                      | Value           | When it's exceeded                                                     |
+|--------------------------------------------|-----------------|------------------------------------------------------------------------|
+| spans per trace                            | 256             | new spans are inert, and `TraceFacet.droppedSpanCount` goes up         |
+| attributes per span                        | 64              | the attribute is dropped, and `SpanData.droppedAttributeCount` goes up |
+| entries read from an initial attribute map | 256             | the rest aren't read, and each counts as a dropped attribute           |
+| events per span                            | 128             | the event is dropped, and `SpanData.droppedEventCount` goes up         |
+| span / event name                          | 256 chars       | truncated                                                              |
+| attribute key                              | 128 chars       | the attribute is **dropped** (truncating could merge distinct keys)    |
+| string attribute value                     | 1,024 chars     | truncated                                                              |
+| URL (after sanitizing)                     | 1,024 chars     | truncated                                                              |
+| HTTP method                                | 16 chars        | truncated                                                              |
+| status description                         | 512 chars       | truncated                                                              |
+| **text per span**                          | **8,192 chars** | see [Text budget](#text-budget)                                        |
 
 ### Text budget
 
@@ -303,10 +303,10 @@ An exception thrown by code you give tracing (a listener, a `UrlSanitizer`, an i
 is contained and never reaches app code. It's reported here, except for one thrown by the telemeter itself, which is
 dropped because there's nowhere to report it. An `Error`, such as `OutOfMemoryError`, isn't caught and propagates.
 
-| `TracingDiagnostic.kind` | Reported when |
-|---|---|
-| `listener_threw` | a realtime listener threw. Also carries `Failure`. Both hold a redacted copy of the exception: its class name and stack trace, without its message or causes. |
-| `sanitizer_threw` | a custom `UrlSanitizer` threw; the URL was omitted |
-| `attribute_dropped` | an attribute value had an unsupported type |
-| `attributes_unreadable` | the map of initial attributes threw while being read. Entries read before the failure are kept; the rest are lost. Also carries `Failure`. |
-| `limit_exceeded` | a [limit](#limits) dropped or truncated data |
+| `TracingDiagnostic.kind` | Reported when                                                                                                                                                 |
+|--------------------------|---------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| `listener_threw`         | a realtime listener threw. Also carries `Failure`. Both hold a redacted copy of the exception: its class name and stack trace, without its message or causes. |
+| `sanitizer_threw`        | a custom `UrlSanitizer` threw; the URL was omitted                                                                                                            |
+| `attribute_dropped`      | an attribute value had an unsupported type                                                                                                                    |
+| `attributes_unreadable`  | the map of initial attributes threw while being read. Entries read before the failure are kept; the rest are lost. Also carries `Failure`.                    |
+| `limit_exceeded`         | a [limit](#limits) dropped or truncated data                                                                                                                  |
