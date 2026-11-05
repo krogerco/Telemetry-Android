@@ -18,6 +18,7 @@ logging for engineering purposes
     - [Android Relays](#android-relays)
     - [Firebase Analytics Relay](#firebaseanalyticsrelay)
     - [Firebase Crashlytics Relay](#firebasecrashlyticsrelay)
+- [Tracing (experimental)](#tracing-experimental)
 
 ## The Problem
 
@@ -82,7 +83,7 @@ sealed class ActivityEvent : Event {
     }
 
     data class NetworkError(val throwable: Throwable) : ActivityEvent() {
-        listOf(
+        override val facets: List<Facet> = listOf(
             Significance.ERROR,
             /* additional facets */
         )
@@ -355,7 +356,7 @@ class AppTelemeter : Telemeter by Telemeter.build()
 class ModuleTelemeter(appTelemeter: AppTelemeter) : Telemeter by appTelemeter.child()
 
 // can be created as a child of any telemeter
-class NetworkTelemeter(telemeter: Telemeter) by telemeter.child()
+class NetworkTelemeter(telemeter: Telemeter): Telemeter by telemeter.child()
 ```
 
 ---
@@ -393,5 +394,38 @@ This Relay will log any of the following `Facet`s to Firebase Crashlytics
 
 See the [Crashlytics documentation](https://firebase.google.com/docs/crashlytics/get-started?platform=android)for instructions on how to setup Firebase for your project.
 
+
+---
+
+## Tracing (experimental)
+
+> [!WARNING]
+>Tracing is experimental: its API and behavior may change between releases. Breaking changes will be
+>listed in the release notes.
+
+`"com.kroger.telemetry:tracing:<version>"`
+
+Traces made of spans, exported through the same `Telemeter` and `Relay` pipeline. When a trace's root span ends, the
+whole tree is recorded as one event carrying a `TraceFacet`, which any relay can export.
+
+```kotlin
+// Opt in once per module: kotlin { compilerOptions { optIn.add("com.kroger.telemetry.tracing.ExperimentalTracingApi") } }
+
+val tracer = Tracer.build { telemeter = appTelemeter }
+
+val results = tracer.trace("search") { root ->
+    val items = root.child("load_items") { fetchItems() }
+    root.child("rank") { span ->
+        span.setAttribute("count", items.size)
+        rank(items)
+    }
+}
+
+val traceExporter = Relay.buildTypedRelay<TraceFacet> { trace ->
+    // trace.root, trace.spans
+}
+```
+
+See the [tracing guide](tracing/README.md) for more information.
 
 ---

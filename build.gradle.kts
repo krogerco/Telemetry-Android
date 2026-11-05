@@ -32,4 +32,5 @@ dependencies {
     kover(project(":context-aware"))
     kover(project(":firebase"))
     kover(project(":telemetry"))
+    kover(project(":tracing"))
 }

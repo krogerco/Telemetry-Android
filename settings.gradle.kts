@@ -1,4 +1,5 @@
 include(":telemetry")
+include(":tracing")
 include(":android")
 include(":context-aware")
 include(":firebase")

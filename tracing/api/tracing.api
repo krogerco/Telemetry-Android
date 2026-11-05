@@ -1,0 +1,166 @@
+public abstract interface annotation class com/kroger/telemetry/tracing/ExperimentalTracingApi : java/lang/annotation/Annotation {
+}
+
+public final class com/kroger/telemetry/tracing/HttpRequestInfo {
+	public final fun getMethod ()Ljava/lang/String;
+	public final fun getStatusCode ()Ljava/lang/Integer;
+	public final fun getUrl ()Ljava/lang/String;
+	public fun toString ()Ljava/lang/String;
+}
+
+public abstract interface class com/kroger/telemetry/tracing/HttpRequestSpan : com/kroger/telemetry/tracing/Span {
+	public abstract fun propagationHeaders ()Ljava/util/Map;
+	public abstract fun setResponse (I)V
+}
+
+public abstract interface annotation class com/kroger/telemetry/tracing/RealtimeTracingApi : java/lang/annotation/Annotation {
+}
+
+public abstract interface class com/kroger/telemetry/tracing/Span {
+	public abstract fun addEvent (Ljava/lang/String;)V
+	public abstract fun end ()V
+	public abstract fun getSpanId ()Ljava/lang/String;
+	public abstract fun getTraceId ()Ljava/lang/String;
+	public abstract fun recordException (Ljava/lang/Throwable;)V
+	public abstract fun setAttribute (Ljava/lang/String;Ljava/lang/Object;)V
+	public abstract fun setStatus (Lcom/kroger/telemetry/tracing/SpanStatus;)V
+	public abstract fun startChild (Ljava/lang/String;Ljava/util/Map;)Lcom/kroger/telemetry/tracing/Span;
+	public static synthetic fun startChild$default (Lcom/kroger/telemetry/tracing/Span;Ljava/lang/String;Ljava/util/Map;ILjava/lang/Object;)Lcom/kroger/telemetry/tracing/Span;
+	public abstract fun startHttpRequest (Ljava/lang/String;Ljava/lang/String;Ljava/util/Map;)Lcom/kroger/telemetry/tracing/HttpRequestSpan;
+	public static synthetic fun startHttpRequest$default (Lcom/kroger/telemetry/tracing/Span;Ljava/lang/String;Ljava/lang/String;Ljava/util/Map;ILjava/lang/Object;)Lcom/kroger/telemetry/tracing/HttpRequestSpan;
+}
+
+public final class com/kroger/telemetry/tracing/SpanData {
+	public final fun getAttributes ()Ljava/util/Map;
+	public final fun getDroppedAttributeCount ()I
+	public final fun getDroppedEventCount ()I
+	public final fun getDuration-UwyO8pc ()J
+	public final fun getEvents ()Ljava/util/List;
+	public final fun getHttp ()Lcom/kroger/telemetry/tracing/HttpRequestInfo;
+	public final fun getName ()Ljava/lang/String;
+	public final fun getParentSpanId ()Ljava/lang/String;
+	public final fun getSpanId ()Ljava/lang/String;
+	public final fun getStartEpochNanos ()J
+	public final fun getStatus ()Lcom/kroger/telemetry/tracing/SpanStatus;
+	public final fun getTraceId ()Ljava/lang/String;
+	public final fun isTruncated ()Z
+	public fun toString ()Ljava/lang/String;
+}
+
+public final class com/kroger/telemetry/tracing/SpanEvent {
+	public final fun getEpochNanos ()J
+	public final fun getName ()Ljava/lang/String;
+	public final fun getThrowable ()Ljava/lang/Throwable;
+	public fun toString ()Ljava/lang/String;
+}
+
+public final class com/kroger/telemetry/tracing/SpanHelpersKt {
+	public static final fun applyThrowable (Lcom/kroger/telemetry/tracing/Span;Ljava/lang/Throwable;)V
+	public static final fun child (Lcom/kroger/telemetry/tracing/Span;Ljava/lang/String;Ljava/util/Map;Lkotlin/jvm/functions/Function1;)Ljava/lang/Object;
+	public static synthetic fun child$default (Lcom/kroger/telemetry/tracing/Span;Ljava/lang/String;Ljava/util/Map;Lkotlin/jvm/functions/Function1;ILjava/lang/Object;)Ljava/lang/Object;
+	public static final fun trace (Lcom/kroger/telemetry/tracing/Tracer;Ljava/lang/String;Ljava/util/Map;Lkotlin/jvm/functions/Function1;)Ljava/lang/Object;
+	public static synthetic fun trace$default (Lcom/kroger/telemetry/tracing/Tracer;Ljava/lang/String;Ljava/util/Map;Lkotlin/jvm/functions/Function1;ILjava/lang/Object;)Ljava/lang/Object;
+}
+
+public abstract interface class com/kroger/telemetry/tracing/SpanListener {
+	public fun onEnd (Ljava/lang/Object;Lcom/kroger/telemetry/tracing/SpanData;)V
+	public abstract fun onStart (Lcom/kroger/telemetry/tracing/SpanStart;Ljava/lang/Object;)Ljava/lang/Object;
+	public fun propagationHeaders (Ljava/lang/Object;)Ljava/util/Map;
+}
+
+public final class com/kroger/telemetry/tracing/SpanStart {
+	public final fun getName ()Ljava/lang/String;
+	public final fun getSpanId ()Ljava/lang/String;
+	public final fun getTraceId ()Ljava/lang/String;
+	public final fun isHttpRequest ()Z
+	public final fun isRoot ()Z
+	public fun toString ()Ljava/lang/String;
+}
+
+public abstract interface class com/kroger/telemetry/tracing/SpanStatus {
+}
+
+public final class com/kroger/telemetry/tracing/SpanStatus$Cancelled : com/kroger/telemetry/tracing/SpanStatus {
+	public static final field INSTANCE Lcom/kroger/telemetry/tracing/SpanStatus$Cancelled;
+	public fun equals (Ljava/lang/Object;)Z
+	public fun hashCode ()I
+	public fun toString ()Ljava/lang/String;
+}
+
+public final class com/kroger/telemetry/tracing/SpanStatus$Error : com/kroger/telemetry/tracing/SpanStatus {
+	public fun <init> ()V
+	public fun <init> (Ljava/lang/String;)V
+	public synthetic fun <init> (Ljava/lang/String;ILkotlin/jvm/internal/DefaultConstructorMarker;)V
+	public fun equals (Ljava/lang/Object;)Z
+	public final fun getDescription ()Ljava/lang/String;
+	public fun hashCode ()I
+	public fun toString ()Ljava/lang/String;
+}
+
+public final class com/kroger/telemetry/tracing/SpanStatus$Ok : com/kroger/telemetry/tracing/SpanStatus {
+	public static final field INSTANCE Lcom/kroger/telemetry/tracing/SpanStatus$Ok;
+	public fun equals (Ljava/lang/Object;)Z
+	public fun hashCode ()I
+	public fun toString ()Ljava/lang/String;
+}
+
+public final class com/kroger/telemetry/tracing/TraceFacet : com/kroger/telemetry/facet/Facet {
+	public final fun getDroppedSpanCount ()I
+	public final fun getRoot ()Lcom/kroger/telemetry/tracing/SpanData;
+	public final fun getSpans ()Ljava/util/List;
+	public final fun getTraceId ()Ljava/lang/String;
+	public fun toString ()Ljava/lang/String;
+}
+
+public final class com/kroger/telemetry/tracing/Tracer {
+	public static final field Companion Lcom/kroger/telemetry/tracing/Tracer$Companion;
+	public final fun startTrace (Ljava/lang/String;Ljava/util/Map;)Lcom/kroger/telemetry/tracing/Span;
+	public static synthetic fun startTrace$default (Lcom/kroger/telemetry/tracing/Tracer;Ljava/lang/String;Ljava/util/Map;ILjava/lang/Object;)Lcom/kroger/telemetry/tracing/Span;
+}
+
+public final class com/kroger/telemetry/tracing/Tracer$Builder {
+	public fun <init> ()V
+	public final fun build ()Lcom/kroger/telemetry/tracing/Tracer;
+	public final fun getListeners ()Ljava/util/List;
+	public final fun getTelemeter ()Lcom/kroger/telemetry/Telemeter;
+	public final fun getUrlSanitizer ()Lcom/kroger/telemetry/tracing/UrlSanitizer;
+	public final fun setTelemeter (Lcom/kroger/telemetry/Telemeter;)V
+	public final fun setUrlSanitizer (Lcom/kroger/telemetry/tracing/UrlSanitizer;)V
+}
+
+public final class com/kroger/telemetry/tracing/Tracer$Companion {
+	public final fun build (Lkotlin/jvm/functions/Function1;)Lcom/kroger/telemetry/tracing/Tracer;
+	public static synthetic fun build$default (Lcom/kroger/telemetry/tracing/Tracer$Companion;Lkotlin/jvm/functions/Function1;ILjava/lang/Object;)Lcom/kroger/telemetry/tracing/Tracer;
+	public final fun getNoOp ()Lcom/kroger/telemetry/tracing/Tracer;
+}
+
+public final class com/kroger/telemetry/tracing/TracingDiagnostic : com/kroger/telemetry/facet/Facet {
+	public final fun getKind ()Ljava/lang/String;
+	public final fun getMessage ()Ljava/lang/String;
+	public final fun getSource ()Ljava/lang/String;
+	public final fun getThrowable ()Ljava/lang/Throwable;
+	public fun toString ()Ljava/lang/String;
+}
+
+public final class com/kroger/telemetry/tracing/TracingDiagnostic$Kinds {
+	public static final field ATTRIBUTES_UNREADABLE Ljava/lang/String;
+	public static final field ATTRIBUTE_DROPPED Ljava/lang/String;
+	public static final field INSTANCE Lcom/kroger/telemetry/tracing/TracingDiagnostic$Kinds;
+	public static final field LIMIT_EXCEEDED Ljava/lang/String;
+	public static final field LISTENER_THREW Ljava/lang/String;
+	public static final field SANITIZER_THREW Ljava/lang/String;
+}
+
+public abstract interface class com/kroger/telemetry/tracing/UrlSanitizer {
+	public static final field Companion Lcom/kroger/telemetry/tracing/UrlSanitizer$Companion;
+	public abstract fun sanitize (Ljava/lang/String;)Ljava/lang/String;
+}
+
+public final class com/kroger/telemetry/tracing/UrlSanitizer$Companion {
+	public final fun getDefault ()Lcom/kroger/telemetry/tracing/UrlSanitizer;
+	public final fun getDefaultRedactedParameters ()Ljava/util/Set;
+	public final fun getNone ()Lcom/kroger/telemetry/tracing/UrlSanitizer;
+	public final fun getStripQuery ()Lcom/kroger/telemetry/tracing/UrlSanitizer;
+	public final fun redacting ([Ljava/lang/String;)Lcom/kroger/telemetry/tracing/UrlSanitizer;
+}
+

@@ -29,6 +29,7 @@ import android.content.Context
 import com.kroger.telemetry.Event
 import com.kroger.telemetry.android.facet.ToastFacet
 import com.kroger.telemetry.facet.Facet
+import com.kroger.telemetry.tracing.Tracer
 import dagger.Module
 import dagger.Provides
 import dagger.hilt.InstallIn
@@ -36,6 +37,7 @@ import dagger.hilt.android.HiltAndroidApp
 import dagger.hilt.android.qualifiers.ApplicationContext
 import dagger.hilt.components.SingletonComponent
 import javax.inject.Inject
+import javax.inject.Singleton
 
 @HiltAndroidApp
 class SampleApplication : Application() {
@@ -63,4 +65,8 @@ object TelemeterModule {
     fun provideContext(
         @ApplicationContext context: Context,
     ): Context = context
+
+    @Provides
+    @Singleton
+    fun provideTracer(telemeter: AppTelemeter): Tracer = Tracer.build { this.telemeter = telemeter }
 }

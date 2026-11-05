@@ -37,6 +37,9 @@ import com.kroger.telemetry.facet.Facet
 import com.kroger.telemetry.facet.Prefix
 import com.kroger.telemetry.facet.Significance
 import com.kroger.telemetry.sample.databinding.ActivityMainBinding
+import com.kroger.telemetry.tracing.Tracer
+import com.kroger.telemetry.tracing.child
+import com.kroger.telemetry.tracing.trace
 import dagger.Module
 import dagger.Provides
 import dagger.hilt.InstallIn
@@ -52,6 +55,9 @@ class MainActivity : AppCompatActivity() {
 
     @Inject
     lateinit var telemeter: ModuleOneTelemeter
+
+    @Inject
+    lateinit var tracer: Tracer
 
     override fun onCreate(savedInstanceState: Bundle?) {
         enableEdgeToEdge()
@@ -70,8 +76,13 @@ class MainActivity : AppCompatActivity() {
          */
         telemeter.record(ActivityEvent.Created)
 
-        binding.eventButton.setOnClickListener {
-            telemeter.record(ActivityEvent.ButtonClicked(it.tag.toString()))
+        binding.eventButton.setOnClickListener { view ->
+            // The trace is recorded as an event ("Trace: button_click") when the block returns and the root span ends.
+            tracer.trace("button_click", mapOf("button" to view.tag.toString())) { root ->
+                root.child("record_event") {
+                    telemeter.record(ActivityEvent.ButtonClicked(view.tag.toString()))
+                }
+            }
         }
         binding.catastropheButton.setOnClickListener {
             val event = ActivityEvent.ButtonClicked(it.tag.toString())
