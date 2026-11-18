@@ -114,6 +114,7 @@ public final class com/kroger/telemetry/tracing/TraceFacet : com/kroger/telemetr
 
 public final class com/kroger/telemetry/tracing/Tracer {
 	public static final field Companion Lcom/kroger/telemetry/tracing/Tracer$Companion;
+	public final fun isEnabled ()Z
 	public final fun startTrace (Ljava/lang/String;Ljava/util/Map;)Lcom/kroger/telemetry/tracing/Span;
 	public static synthetic fun startTrace$default (Lcom/kroger/telemetry/tracing/Tracer;Ljava/lang/String;Ljava/util/Map;ILjava/lang/Object;)Lcom/kroger/telemetry/tracing/Span;
 }
@@ -121,9 +122,11 @@ public final class com/kroger/telemetry/tracing/Tracer {
 public final class com/kroger/telemetry/tracing/Tracer$Builder {
 	public fun <init> ()V
 	public final fun build ()Lcom/kroger/telemetry/tracing/Tracer;
+	public final fun getEnabledWhen ()Lkotlin/jvm/functions/Function0;
 	public final fun getListeners ()Ljava/util/List;
 	public final fun getTelemeter ()Lcom/kroger/telemetry/Telemeter;
 	public final fun getUrlSanitizer ()Lcom/kroger/telemetry/tracing/UrlSanitizer;
+	public final fun setEnabledWhen (Lkotlin/jvm/functions/Function0;)V
 	public final fun setTelemeter (Lcom/kroger/telemetry/Telemeter;)V
 	public final fun setUrlSanitizer (Lcom/kroger/telemetry/tracing/UrlSanitizer;)V
 }
@@ -145,6 +148,7 @@ public final class com/kroger/telemetry/tracing/TracingDiagnostic : com/kroger/t
 public final class com/kroger/telemetry/tracing/TracingDiagnostic$Kinds {
 	public static final field ATTRIBUTES_UNREADABLE Ljava/lang/String;
 	public static final field ATTRIBUTE_DROPPED Ljava/lang/String;
+	public static final field ENABLED_WHEN_THREW Ljava/lang/String;
 	public static final field INSTANCE Lcom/kroger/telemetry/tracing/TracingDiagnostic$Kinds;
 	public static final field LIMIT_EXCEEDED Ljava/lang/String;
 	public static final field LISTENER_THREW Ljava/lang/String;
