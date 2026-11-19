@@ -46,6 +46,17 @@ public class Tracer internal constructor(
         attributes: Map<String, Any?> = emptyMap(),
     ): Span = core?.startTrace(name, attributes) ?: InertSpan.NoOp
 
+    /**
+     * Whether a trace started now would be recorded, per [Builder.enabledWhen]. Always false for [NoOp].
+     *
+     * Evaluated on every read, so don't cache it. Use it to skip work that only feeds a trace, such as building an
+     * attribute map, when missing that data on a recorded trace is acceptable. This is only an advisory check:
+     * [startTrace] checks independently, so a later change can produce an inert trace or a recorded trace
+     * without the data whose preparation was skipped.
+     */
+    public val isEnabled: Boolean
+        get() = core?.isEnabled() ?: false
+
     /** Configuration for a [Tracer]. New options are added as new properties, which never breaks callers. */
     public class Builder {
         /** Where completed traces ([TraceFacet]) and diagnostics ([TracingDiagnostic]) are recorded. If null, neither is recorded. */
@@ -57,6 +68,20 @@ public class Tracer internal constructor(
          * alternatives, such as [UrlSanitizer.StripQuery].
          */
         public var urlSanitizer: UrlSanitizer = UrlSanitizer.Default
+
+        /**
+         * Decides each time a trace starts whether it is recorded. When it returns false, [Tracer.startTrace] returns
+         * an inert span and nothing is recorded or sent to listeners. Defaults to always on.
+         *
+         * The decision is made once at the root. A trace that started enabled stays enabled if this later returns
+         * false, and one that started inert never records. Use it for a switch that can change after the [Tracer] is
+         * built, such as a remote config that loads after startup.
+         *
+         * It runs on every [Tracer.startTrace], possibly on the main thread, so it must be fast and must not block.
+         * If it throws, the trace is inert and a [TracingDiagnostic.Kinds.ENABLED_WHEN_THREW] is recorded on [telemeter],
+         * once per exception class. The same applies when [Tracer.isEnabled] is read.
+         */
+        public var enabledWhen: () -> Boolean = { true }
 
         /** Realtime listeners, called in list order. Copied when [build] runs. */
         @RealtimeTracingApi
@@ -71,7 +96,16 @@ public class Tracer internal constructor(
             // A listener only ever receives state it returned itself, so erasing S is safe.
             @Suppress("UNCHECKED_CAST")
             val listeners = listeners.toList() as List<SpanListener<Any>>
-            return Tracer(TracerCore(telemeter, listeners, urlSanitizer, clock))
+            return Tracer(
+                core =
+                    TracerCore(
+                        telemeter = telemeter,
+                        listeners = listeners,
+                        sanitizer = urlSanitizer,
+                        enabledWhen = enabledWhen,
+                        clock = clock,
+                    ),
+            )
         }
     }
 

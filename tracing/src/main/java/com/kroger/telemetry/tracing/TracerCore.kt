@@ -28,6 +28,7 @@ package com.kroger.telemetry.tracing
 import com.kroger.telemetry.Event
 import com.kroger.telemetry.Telemeter
 import com.kroger.telemetry.facet.Significance
+import com.kroger.telemetry.tracing.TracingDiagnostic.Kinds.ENABLED_WHEN_THREW
 import com.kroger.telemetry.tracing.TracingDiagnostic.Kinds.SANITIZER_THREW
 import java.util.concurrent.ConcurrentHashMap
 
@@ -40,6 +41,7 @@ internal class TracerCore(
     /** Unchecked cast at build: a listener only ever receives state it returned itself. */
     val listeners: List<SpanListener<Any>>,
     private val sanitizer: UrlSanitizer,
+    private val enabledWhen: () -> Boolean,
     val clock: TraceClock,
 ) {
     /**
@@ -48,11 +50,31 @@ internal class TracerCore(
      */
     private val reported = ConcurrentHashMap.newKeySet<DiagnosticKey>()
 
-    /** Creates the trace's own [TraceState] and starts its root. */
+    /**
+     * Runs the caller's [enabledWhen]. A predicate that throws counts as disabled. The exception is reported
+     * once per exception class, so broken predicate code shows up without flooding the telemeter. No lock may be held.
+     */
+    fun isEnabled(): Boolean =
+        try {
+            enabledWhen()
+        } catch (t: Exception) {
+            val pending = PendingDiagnostics()
+            pending.report(
+                ENABLED_WHEN_THREW,
+                "enabledWhen threw ${t.javaClass.name}; the trace is inert",
+                source = enabledWhen.javaClass.name,
+                throwable = t,
+            )
+            emit(pending)
+            false
+        }
+
+    /** Starts a new trace and its root, or returns an inert span if [isEnabled] is false. */
     fun startTrace(
         name: String,
         attributes: Map<String, Any?>,
     ): Span {
+        if (!isEnabled()) return InertSpan.NoOp
         val state = TraceState(Ids.newTraceId(), this, clock.nowEpochNanos(), clock.markNow())
         return state.start(parent = null, name, attributes)
     }

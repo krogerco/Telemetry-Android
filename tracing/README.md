@@ -196,6 +196,26 @@ getItemsUseCase.getItems(query, UntracedSpan)
 Spans from `Tracer.NoOp` record nothing and cost nothing: every one is the same shared instance. `Tracer.NoOp` is
 also what to inject when tracing is turned off.
 
+**If the switch can change after the `Tracer` is built**, such as a preference or remote config that loads after startup, build the
+real `Tracer` and give it a predicate using `enabledWhen` instead of using `Tracer.NoOp`:
+
+```kotlin
+val tracer = Tracer.build {
+    telemeter = appTelemeter
+    enabledWhen = { config.isTracingEnabled }
+}
+```
+
+`enabledWhen` runs each time a trace starts. When it returns false that trace is inert, exactly like one from
+`Tracer.NoOp`. The decision is made at the root, so a trace is never half-recorded, and a later change affects only
+traces that start after it. The predicate runs on the caller's thread, possibly the main thread, so it must be fast
+and must not block. If it throws, the trace is inert and a `TracingDiagnostic.ENABLED_WHEN_THREW` is
+recorded, once per exception class, so a broken predicate is visible without flooding the telemeter. Reading
+`tracer.isEnabled` reports the same way.
+
+`tracer.isEnabled` gives the current answer, so you can skip work that only feeds a trace, such as building an
+attribute map. Read it each time and don't cache it. It is never required since `startTrace` does its own `isEnabled` check.
+
 ### HTTP requests
 
 `Span.startHttpRequest(method, url)` starts a child span for one request attempt. It's named `HTTP <METHOD>` (the URL

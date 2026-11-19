@@ -63,12 +63,12 @@ public class TracingDiagnostic internal constructor(
     public val kind: String,
     /** A short human-readable explanation, built from class names and limit values. Never contains caller-supplied text, URLs or exception messages. */
     public val message: String,
-    /** The class name of the listener or sanitizer involved, if any. */
+    /** The class name of the listener, sanitizer or enabled-predicate involved, if any. */
     public val source: String?,
     /**
      * A redacted copy of the exception a listener threw: the original's class name (in `toString()`) and stack trace,
      * without its message or causes, which could carry an unsanitized URL, a credential or user data. Only set for
-     * [Kinds.LISTENER_THREW] and [Kinds.ATTRIBUTES_UNREADABLE].
+     * [Kinds.LISTENER_THREW], [Kinds.ENABLED_WHEN_THREW] and [Kinds.ATTRIBUTES_UNREADABLE].
      */
     public val throwable: Throwable?,
 ) : Facet {
@@ -84,6 +84,12 @@ public class TracingDiagnostic internal constructor(
          * Reported once per sanitizer.
          */
         public const val SANITIZER_THREW: String = "sanitizer_threw"
+
+        /**
+         * The [Tracer.Builder.enabledWhen] predicate threw, so the trace was inert. Reported once per (predicate,
+         * exception class), however many traces start, so a predicate that throws every time is reported once.
+         */
+        public const val ENABLED_WHEN_THREW: String = "enabled_when_threw"
 
         /** An attribute value had an unsupported type and was dropped. Reported once per value type. */
         public const val ATTRIBUTE_DROPPED: String = "attribute_dropped"
