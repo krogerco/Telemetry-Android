@@ -50,8 +50,9 @@ public class Tracer internal constructor(
      * Whether a trace started now would be recorded, per [Builder.enabledWhen]. Always false for [NoOp].
      *
      * Evaluated on every read, so don't cache it. Use it to skip work that only feeds a trace, such as building an
-     * attribute map. [startTrace] does its own check, so it's never required, and if the answer changes between
-     * this check and [startTrace], the worst case is an inert trace.
+     * attribute map, when missing that data on a recorded trace is acceptable. This is only an advisory check:
+     * [startTrace] checks independently, so a later change can produce an inert trace or a recorded trace
+     * without the data whose preparation was skipped.
      */
     public val isEnabled: Boolean
         get() = core?.isEnabled() ?: false
